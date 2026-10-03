@@ -43,6 +43,17 @@ This determines which menu to show and how cleanup works:
 | `GIT_DIR != GIT_COMMON`, named branch | Standard 3 options | Provenance-based (see Step 6) |
 | `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | Externally managed — leave in place |
 
+## Step 2b: Load Project Config
+
+Resolve the effective config as described in
+[project-config.md](../sp-init/project-config.md) ("Resolve the effective
+config"). Two keys matter here:
+
+- `finish` — `"ask"` (default) or `"pr"`
+- `crossReview` — `false` (default) or `true`
+
+Config never blocks: missing files mean defaults.
+
 ## Step 3: Determine Base Branch
 
 The base branch is whatever this work forked from — usually named in the
@@ -51,6 +62,14 @@ known, ask: "This branch split from <your best guess> - is that correct?"
 Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
+
+**If the project config sets `finish: "pr"`:** skip the menu. Announce
+"Project config sets `finish: pr` — opening a PR." and go to Option 2
+(detached HEAD: "Push as new branch and create a Pull Request"). Step 1's
+green suite and Step 3's base branch still apply; discard is never
+automatic.
+
+**Otherwise (`finish: "ask"`):**
 
 **Normal repo and named-branch worktree — present exactly these 3 options:**
 
@@ -111,6 +130,12 @@ git branch -d <feature-branch>
 ```
 
 ### Option 2: Push and Create PR
+
+**If the project config sets `crossReview: true`:** first run
+[cross-provider-review.md](../requesting-code-review/cross-provider-review.md)
+with `<base-branch>`, and include its section in the PR body. This applies
+to the detached-HEAD PR option too, and whether you got here from the menu
+or from `finish: "pr"`.
 
 ```bash
 git push -u origin <feature-branch>
@@ -223,3 +248,4 @@ place. If your platform provides a workspace-exit tool, use it.
 | "The merged-result failure is probably flaky" | A failing merged result stops everything. Branch and worktree stay put while you investigate. |
 | "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
 | "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
+| "Config says `pr`, but this one feels like a local merge" | The config is your human partner's standing decision. Follow it; mention the doubt in the report, don't override it. |
