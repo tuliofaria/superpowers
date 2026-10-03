@@ -78,6 +78,12 @@ require_text "$F" 'finish: "pr"'
 require_text "$F" "../requesting-code-review/cross-provider-review.md"
 require_text "$F" "Config says \`pr\`, but this one feels like a local merge"
 
+# --- writing-plans honors execution ---
+F="skills/writing-plans/SKILL.md"
+require_text "$F" "../sp-init/project-config.md"
+require_text "$F" "Project config sets \`execution: <value>\`"
+require_text "$F" "stated explicitly in the conversation wins over the config"
+
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
     exit 1

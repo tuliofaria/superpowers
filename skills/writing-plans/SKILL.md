@@ -184,6 +184,16 @@ them to review the plan and confirm it captures what they want; wait for that
 review before implementation, then use the preserved method. Otherwise, ask
 them to review the plan and choose an execution method before implementation.
 
+**Project config.** Before choosing which prompt to use, resolve the
+effective config ([project-config.md](../sp-init/project-config.md),
+"Resolve the effective config"). `execution: "subagent"` or
+`execution: "native"` counts as an execution method already supplied:
+say "Project config sets `execution: <value>`." and use the
+already-supplied prompt below — plan review still happens. `subagent` with
+no subagent tool in this harness becomes `native`; say so. A method your
+human partner stated explicitly in the conversation wins over the config.
+`execution: "ask"` (the default) changes nothing.
+
 **When no execution method has already been supplied:**
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Which execution approach would you prefer?**
