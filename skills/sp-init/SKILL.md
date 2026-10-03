@@ -20,7 +20,7 @@ config") and show each key with its value and the file it came from
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
 4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
-5. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`), or global (`~/.config/superpowers/config.json`)?
+5. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`, written to `<main>/.superpowers/config.local.json` in a linked worktree), or global (`~/.config/superpowers/config.json`)?
 
 Offer the current effective value as the default answer for each.
 
@@ -37,16 +37,22 @@ and continue — the setting is saved anyway.
 
 - Create the destination's parent directory if needed.
 - If the destination already exists and is valid JSON, keep its other
-  keys; otherwise start from `{}`.
-- Set each answered key **only if it differs from the default**; remove
-  it from the file if it equals the default.
+  keys. If it exists but is not valid JSON, show your human partner the
+  current content and ask "Replace this with config?" On yes, start from
+  `{}`; on no, stop without writing.
+- For each answered key, compute the value the layers *below* the
+  destination would produce (lower-precedence files, then the default;
+  precedence order: local > project > global > default — see
+  project-config.md). If the answer equals that value, remove the key from
+  the destination; otherwise set it explicitly.
 - Write pretty-printed JSON with a trailing newline. If the result is
   `{}`, still write it.
 
 ## Step 5: `.gitignore`
 
 **Project local destination:** run
-`git check-ignore -q .superpowers/config.local.json` from `<repo>`.
+`git check-ignore -q .superpowers/config.local.json` from `<main>` (the
+main checkout; see project-config.md, `<main>`).
 - Exit 0 (already ignored, e.g. by a `.superpowers/` rule): say so; do
   not ask.
 - Otherwise ask: "Add `.superpowers/config.local.json` to this repo's
