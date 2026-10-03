@@ -26,9 +26,14 @@ Three fork-only changes:
   kept localized to ease merging upstream releases.
 - **Config: fixed JSON keys, three layers.** Global
   `~/.config/superpowers/config.json`, project-committed
-  `<repo>/.superpowers/config.json`, project-local
+  `<repo>/.superpowers.json`, project-local
   `<repo>/.superpowers/config.local.json`. Precedence per key:
   local > project > global > default.
+- **Committed config sits at the repo root, not in `.superpowers/`.**
+  Superpowers tells users to gitignore `.superpowers/` (visual companion),
+  and git cannot re-include a file under an ignored directory, so a
+  committed `.superpowers/config.json` would be silently ignored. The local
+  file stays in `.superpowers/` and is often ignored for free.
 - **Config resolution: hook reads only `mode`; skills read the rest.**
   The hook stays pure bash (no node/jq/python). Skills tell the agent to
   read and merge the files, which works identically in Codex.
@@ -80,7 +85,7 @@ match wins:
    (resolved to an absolute path). Skipped when it equals `<repo>`.
 
 Full order for any key: local (repo, then main worktree root) → project
-(`<repo>/.superpowers/config.json`) → global → default.
+(`<repo>/.superpowers.json`) → global → default.
 
 ## Component 1: `hooks/session-start` — manual mode
 
@@ -149,9 +154,13 @@ Flow:
    how to fix it and save anyway.
 4. Write only keys that differ from the defaults, merged into the existing
    destination file (other keys in that file are preserved).
-5. If the destination is project local, ask whether to add
-   `.superpowers/config.local.json` to the repo's `.gitignore`. Add it
-   only on yes, and only if not already present.
+5. If the destination is project local and
+   `git check-ignore -q .superpowers/config.local.json` says it is not
+   ignored yet, ask whether to add it to the repo's `.gitignore`. Add it
+   only on yes. If it is already ignored, say so and skip the question.
+   If the destination is project committed and
+   `git check-ignore -q .superpowers.json` says it is ignored, warn that
+   it will not be committed as-is.
 6. Never commit.
 
 ## Component 4: `finishing-a-development-branch` changes

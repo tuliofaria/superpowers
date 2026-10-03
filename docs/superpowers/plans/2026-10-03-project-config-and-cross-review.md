@@ -16,7 +16,7 @@
 - Hook stays pure bash: no `node`, `jq`, or `python` at hook runtime.
 - Config files, precedence local > project > global > default:
   - `<repo>/.superpowers/config.local.json`, then `<main-worktree-root>/.superpowers/config.local.json`
-  - `<repo>/.superpowers/config.json`
+  - `<repo>/.superpowers.json`
   - `~/.config/superpowers/config.json`
 - Keys and defaults: `mode` (`"auto"` | `"manual"`, default `"auto"`), `finish` (`"ask"` | `"pr"`, default `"ask"`), `crossReview` (`true` | `false`, default `false`), `execution` (`"ask"` | `"subagent"` | `"native"`, default `"ask"`). Unknown keys ignored; unknown values fall back to the key's default.
 - Manual mode is Claude Code only; Codex honors `finish`, `crossReview`, and `execution` only.
@@ -29,7 +29,7 @@
 ## Review Focus
 
 1. **Linked worktree with `config.local.json` only in the main checkout** — manual mode must still apply inside `.worktrees/<branch>`; pinned in Task 1 (worktree test).
-2. **Outside a git repo** (`CLAUDE_PROJECT_DIR` is a plain directory) — the hook must not fail and must read `<dir>/.superpowers/config.json`; pinned in Task 1.
+2. **Outside a git repo** (`CLAUDE_PROJECT_DIR` is a plain directory) — the hook must not fail and must read `<dir>/.superpowers.json`; pinned in Task 1.
 3. **Value with wrong case or an unquoted value** (`"Manual"`, `manual` without quotes) — must resolve to auto, never to an error or an empty context; pinned in Task 1.
 4. **The official superpowers plugin is installed alongside the fork** — its own hook still injects the full bootstrap, silently defeating manual mode; Task 6 disables it for the behavioral run and the README warns about it.
 5. **Codex loading `sp`/`sp-init` with the Claude-only `disable-model-invocation` frontmatter key** — Codex must still load the skill set; checked in Task 6 step 6.
@@ -110,7 +110,7 @@ assert_command_output \
     bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-project)"; repo="$(make_repo mode-project)"
-write_file "$repo/.superpowers/config.json" '{ "finish": "pr", "mode": "manual" }'
+write_file "$repo/.superpowers.json" '{ "finish": "pr", "mode": "manual" }'
 assert_command_output \
     "project mode manual injects the manual notice" \
     "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
@@ -126,7 +126,7 @@ assert_command_output \
     bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-local-wins)"; repo="$(make_repo mode-local-wins)"
-write_file "$repo/.superpowers/config.json" '{"mode": "manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
 write_file "$repo/.superpowers/config.local.json" '{"mode": "auto"}'
 assert_command_output \
     "local auto overrides project manual" \
@@ -136,7 +136,7 @@ assert_command_output \
 
 home="$(make_home mode-project-wins)"; repo="$(make_repo mode-project-wins)"
 write_file "$home/.config/superpowers/config.json" '{"mode": "auto"}'
-write_file "$repo/.superpowers/config.json" '{"mode": "manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
 assert_command_output \
     "project manual overrides global auto" \
     "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
@@ -155,7 +155,7 @@ assert_command_output \
 
 home="$(make_home mode-no-git)"
 plain="$TEST_ROOT/mode-no-git/plain"
-write_file "$plain/.superpowers/config.json" '{"mode": "manual"}'
+write_file "$plain/.superpowers.json" '{"mode": "manual"}'
 assert_command_output \
     "outside a git repo the project dir config still applies" \
     "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
@@ -163,7 +163,7 @@ assert_command_output \
     bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-unquoted)"; repo="$(make_repo mode-unquoted)"
-write_file "$repo/.superpowers/config.json" '{"mode": manual}'
+write_file "$repo/.superpowers.json" '{"mode": manual}'
 assert_command_output \
     "unquoted mode value resolves to auto" \
     "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
@@ -171,7 +171,7 @@ assert_command_output \
     bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-case)"; repo="$(make_repo mode-case)"
-write_file "$repo/.superpowers/config.json" '{"mode": "Manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "Manual"}'
 assert_command_output \
     "wrong-case mode value resolves to auto" \
     "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
@@ -179,7 +179,7 @@ assert_command_output \
     bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-cursor)"; repo="$(make_repo mode-cursor)"
-write_file "$repo/.superpowers/config.json" '{"mode": "manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
 assert_command_output \
     "manual notice uses the Cursor output shape" \
     "cursor" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
@@ -187,7 +187,7 @@ assert_command_output \
     CLAUDE_PROJECT_DIR="$repo" bash "$HOOK_UNDER_TEST"
 
 home="$(make_home mode-sdk)"; repo="$(make_repo mode-sdk)"
-write_file "$repo/.superpowers/config.json" '{"mode": "manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
 assert_command_output \
     "manual notice uses the SDK output shape" \
     "sdk" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
@@ -230,7 +230,7 @@ read_mode_from() {
 # The first file that defines mode wins, in this order:
 #   <repo>/.superpowers/config.local.json
 #   <main worktree root>/.superpowers/config.local.json  (untracked, so absent in linked worktrees)
-#   <repo>/.superpowers/config.json
+#   <repo>/.superpowers.json
 #   ~/.config/superpowers/config.json
 resolve_mode() {
     local start_dir="${CLAUDE_PROJECT_DIR:-$PWD}"
@@ -245,7 +245,7 @@ resolve_mode() {
             candidates+=("$main_root/.superpowers/config.local.json")
         fi
     fi
-    candidates+=("$repo/.superpowers/config.json" "${HOME:-}/.config/superpowers/config.json")
+    candidates+=("$repo/.superpowers.json" "${HOME:-}/.config/superpowers/config.json")
 
     for file in "${candidates[@]}"; do
         if value=$(read_mode_from "$file"); then
@@ -358,6 +358,8 @@ require_text "skills/sp-init/SKILL.md" "codex login status"
 require_text "skills/sp-init/SKILL.md" "\`execution\`"
 require_text "skills/sp-init/project-config.md" '"execution": "ask"'
 require_text "skills/sp-init/SKILL.md" ".gitignore"
+require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers/config.local.json"
+require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers.json"
 require_text "skills/sp-init/SKILL.md" "Never commit"
 
 if [[ "$FAILURES" -gt 0 ]]; then
@@ -411,8 +413,12 @@ main checkout, which differs from `<repo>` inside a linked worktree.
 | Layer | Path |
 |---|---|
 | local (untracked, personal) | `<repo>/.superpowers/config.local.json`, else `<main>/.superpowers/config.local.json` |
-| project (committed, shared) | `<repo>/.superpowers/config.json` |
+| project (committed, shared) | `<repo>/.superpowers.json` |
 | global | `~/.config/superpowers/config.json` |
+
+The committed file lives at the repo root, not inside `.superpowers/`:
+projects commonly gitignore `.superpowers/` (superpowers' own scratch
+space), and git cannot re-include a file under an ignored directory.
 
 `config.local.json` is untracked, so it never exists inside a linked
 worktree — that is why `<main>` is checked.
@@ -453,7 +459,7 @@ config") and show each key with its value and the file it came from
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
 4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
-5. Destination — project committed (`.superpowers/config.json`), project local (`.superpowers/config.local.json`), or global (`~/.config/superpowers/config.json`)?
+5. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`), or global (`~/.config/superpowers/config.json`)?
 
 Offer the current effective value as the default answer for each.
 
@@ -476,11 +482,20 @@ and continue — the setting is saved anyway.
 - Write pretty-printed JSON with a trailing newline. If the result is
   `{}`, still write it.
 
-## Step 5: `.gitignore` (project local destination only)
+## Step 5: `.gitignore`
 
-Ask: "Add `.superpowers/config.local.json` to this repo's `.gitignore`?"
-On yes, append that line to `<repo>/.gitignore` unless an identical line
-is already there. On no, change nothing.
+**Project local destination:** run
+`git check-ignore -q .superpowers/config.local.json` from `<repo>`.
+- Exit 0 (already ignored, e.g. by a `.superpowers/` rule): say so; do
+  not ask.
+- Otherwise ask: "Add `.superpowers/config.local.json` to this repo's
+  `.gitignore`?" On yes, append that line to `<repo>/.gitignore`. On no,
+  change nothing.
+
+**Project committed destination:** run `git check-ignore -q .superpowers.json`.
+Exit 0 means a rule ignores it: warn your human partner that the file will
+not be committed as-is and show the matching rule
+(`git check-ignore -v .superpowers.json`). Do not edit `.gitignore`.
 
 ## Step 6: Report
 
@@ -940,7 +955,7 @@ the JSON by hand — details in
   development, `native` → in-session execution). You still review the plan.
 
 Files, highest precedence first: `.superpowers/config.local.json`
-(personal — add it to `.gitignore`), `.superpowers/config.json`
+(personal — add it to `.gitignore`), `.superpowers.json`
 (committed), `~/.config/superpowers/config.json` (global).
 
 **Install the fork instead of, not alongside, the official plugin.** The
@@ -964,7 +979,7 @@ git commit -m "docs: fork section for project config, /sp, and cross-review"
 
 ```bash
 SANDBOX=$(mktemp -d) && cd "$SANDBOX" && git init -q && git commit -q --allow-empty -m init
-mkdir -p .superpowers && printf '{"mode": "manual"}\n' > .superpowers/config.json
+mkdir -p .superpowers && printf '{"mode": "manual"}\n' > .superpowers.json
 claude plugin disable superpowers@claude-plugins-official
 ```
 
@@ -979,7 +994,7 @@ claude -p --plugin-dir "$FORK" --output-format stream-json --verbose \
   "Let's make a react todo list" > manual.jsonl
 claude -p --plugin-dir "$FORK" --output-format stream-json --verbose \
   "/sp let's make a react todo list" > sp.jsonl
-printf '{"mode": "auto"}\n' > .superpowers/config.json
+printf '{"mode": "auto"}\n' > .superpowers.json
 claude -p --plugin-dir "$FORK" --output-format stream-json --verbose \
   "Let's make a react todo list" > auto.jsonl
 grep -c '"skill":"superpowers:brainstorming"' manual.jsonl sp.jsonl auto.jsonl
@@ -998,7 +1013,7 @@ Ask your human partner for a scratch GitHub repo they are happy to open a PR in.
 
 - [ ] **Step 8: `execution` check**
 
-In `$SANDBOX` set `.superpowers/config.json` to `{"execution": "native"}`, then in an interactive `claude --plugin-dir "$FORK"` session ask for a tiny feature and approve the design and spec. Expected at the plan handoff: "Project config sets `execution: native`." followed only by the plan-review question — no Subagent-driven/Native menu. After approving, the session invokes `superpowers:executing-plans`.
+In `$SANDBOX` set `.superpowers.json` to `{"execution": "native"}`, then in an interactive `claude --plugin-dir "$FORK"` session ask for a tiny feature and approve the design and spec. Expected at the plan handoff: "Project config sets `execution: native`." followed only by the plan-review question — no Subagent-driven/Native menu. After approving, the session invokes `superpowers:executing-plans`.
 
 - [ ] **Step 9: Restore**
 
