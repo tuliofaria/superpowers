@@ -23,6 +23,7 @@ Superpowers is a complete software development methodology for your coding agent
   - [Qwen Code](#qwen-code)
   - [Hermes Agent](#hermes-agent)
   - [Muse](#muse)
+- [Fork: Project Config, `/sp`, and Cross-Provider Review](#fork-project-config-sp-and-cross-provider-review)
 - [The Basic Workflow](#the-basic-workflow)
 - [When Something Goes Wrong](#when-something-goes-wrong)
 - [Community](#community)
@@ -303,6 +304,37 @@ Superpowers is available as a native Muse plugin — same repo, same skills, all
   ```
 
 Restart any active Muse sessions after installing so the `SessionStart` hook takes effect — skills are active immediately, hooks require approval on first install. To verify, start a fresh session and send `Let's make a react todo list` — a working install auto-triggers `brainstorming` before any code is written. Version is tracked in `.version-bump.json` so `scripts/bump-version.sh` keeps it in sync.
+
+## Fork: Project Config, `/sp`, and Cross-Provider Review
+
+This fork adds per-project defaults. Run `/sp-init` to write them, or edit
+the JSON by hand — details in
+[`skills/sp-init/project-config.md`](skills/sp-init/project-config.md).
+
+```json
+{ "mode": "manual", "finish": "pr", "crossReview": true, "execution": "native" }
+```
+
+- **`mode: "manual"`** (Claude Code only) — superpowers stays quiet until
+  you run `/sp <task>`; `/sp` routes the task (bug → debugging, feature →
+  brainstorming, plan → execution, "finish" → finishing) and stays active
+  for the rest of the session.
+- **`finish: "pr"`** — finishing skips its menu and opens a PR.
+- **`crossReview: true`** — before every PR, the other provider reviews the
+  branch (Claude Code → `codex review`, Codex → `claude -p`), verified
+  findings are fixed in at most two rounds, and the PR body lists fixed /
+  rejected / open findings.
+- **`execution: "subagent" | "native"`** — after you approve a plan, it
+  runs with that method without asking (`subagent` → subagent-driven
+  development, `native` → in-session execution). You still review the plan.
+
+Files, highest precedence first: `.superpowers/config.local.json`
+(personal — add it to `.gitignore`), `.superpowers.json`
+(committed), `~/.config/superpowers/config.json` (global).
+
+**Install the fork instead of, not alongside, the official plugin.** The
+official plugin's SessionStart hook injects the full bootstrap regardless
+of this config, so manual mode has no effect while both are enabled.
 
 ## The Basic Workflow
 
