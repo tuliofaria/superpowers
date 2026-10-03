@@ -41,6 +41,20 @@ require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers/config.
 require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers.json"
 require_text "skills/sp-init/SKILL.md" "Never commit"
 
+# --- sp router ---
+require_file "skills/sp/SKILL.md"
+require_text "skills/sp/SKILL.md" "name: sp"
+require_text "skills/sp/SKILL.md" "disable-model-invocation: true"
+require_text "skills/sp/SKILL.md" '$ARGUMENTS'
+require_text "skills/sp/SKILL.md" "superpowers:using-superpowers"
+require_text "skills/sp/SKILL.md" "superpowers:systematic-debugging"
+require_text "skills/sp/SKILL.md" "superpowers:brainstorming"
+require_text "skills/sp/SKILL.md" "superpowers:subagent-driven-development"
+require_text "skills/sp/SKILL.md" "superpowers:executing-plans"
+require_text "skills/sp/SKILL.md" "../sp-init/project-config.md"
+require_text "skills/sp/SKILL.md" "superpowers:finishing-a-development-branch"
+require_text "skills/sp/SKILL.md" "rest of this session"
+
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
     exit 1
