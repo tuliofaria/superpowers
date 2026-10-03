@@ -56,6 +56,18 @@ require_text "skills/sp/SKILL.md" "superpowers:finishing-a-development-branch"
 require_text "skills/sp/SKILL.md" "rest of this session"
 require_text "skills/sp/SKILL.md" "it wins over the config"
 
+# --- cross-provider review ---
+F="skills/requesting-code-review/cross-provider-review.md"
+require_file "$F"
+require_text "$F" "codex review --base"
+require_text "$F" "claude -p"
+require_text "$F" "code-reviewer.md"
+require_text "$F" "superpowers:receiving-code-review"
+require_text "$F" "No round 3"
+require_text "$F" "## Cross-provider review ("
+require_text "$F" "Never skip the review silently"
+require_text "$F" "escalated"
+
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
     exit 1
