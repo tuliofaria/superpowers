@@ -34,19 +34,20 @@ contents are the round's findings.
 template. Take only the body under `prompt: |`, remove the 4-space indent,
 fill the placeholders `[DESCRIPTION]` (what was built),
 `[PLAN_OR_REQUIREMENTS]` (plan or spec path), `[BASE_SHA]`
-(`git merge-base <base-branch> HEAD`), `[HEAD_SHA]` (`git rev-parse HEAD`),
-and write the result to a temp prompt file. Then:
+(`git merge-base <base-branch> HEAD`), `[HEAD_SHA]` (`git rev-parse HEAD`).
+Write the filled prompt to a temp file with your harness's file-write tool
+(not echo/printf), e.g. `/tmp/cross-review-prompt-$(date +%s).md`, and note
+its literal path. Then:
 
 ```bash
-PROMPT_FILE=$(mktemp -t claude-review-prompt.XXXXXX) && echo "$PROMPT_FILE" && \
-  echo "<filled prompt here>" > "$PROMPT_FILE" && \
-  REVIEW_OUT=$(mktemp -t cross-review.XXXXXX) && echo "$REVIEW_OUT" && \
-  claude -p "$(cat "$PROMPT_FILE")" \
+REVIEW_OUT=$(mktemp -t cross-review.XXXXXX) && echo "$REVIEW_OUT" && \
+  claude -p "$(cat <prompt-file>)" \
     --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git show:*)" \
     > "$REVIEW_OUT" 2>&1; echo "exit=$?"
 ```
 
-Note the printed paths, then read the output file — its contents are the
+where `<prompt-file>` is the literal path you noted. The single path the
+command prints is the output file; read that file — its contents are the
 round's findings. `claude -p` needs network access and writes under
 `~/.claude`; the default Codex sandbox blocks both. Request escalated
 permissions for this one command.
