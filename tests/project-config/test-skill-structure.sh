@@ -70,12 +70,6 @@ require_text "$F" "escalated"
 require_text "$F" "[BASE_SHA]"
 require_text "$F" "exit="
 
-if [[ "$FAILURES" -gt 0 ]]; then
-    echo "STATUS: FAILED ($FAILURES failure(s))"
-    exit 1
-fi
-echo "STATUS: PASSED"
-
 # --- finishing honors config ---
 F="skills/finishing-a-development-branch/SKILL.md"
 require_text "$F" "## Step 2b: Load Project Config"
@@ -83,3 +77,9 @@ require_text "$F" "../sp-init/project-config.md"
 require_text "$F" 'finish: "pr"'
 require_text "$F" "../requesting-code-review/cross-provider-review.md"
 require_text "$F" "Config says \`pr\`, but this one feels like a local merge"
+
+if [[ "$FAILURES" -gt 0 ]]; then
+    echo "STATUS: FAILED ($FAILURES failure(s))"
+    exit 1
+fi
+echo "STATUS: PASSED"
