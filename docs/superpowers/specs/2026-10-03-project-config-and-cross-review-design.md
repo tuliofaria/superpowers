@@ -34,8 +34,8 @@ Three fork-only changes:
   read and merge the files, which works identically in Codex.
 - **Manual mode is Claude Code only.** Codex has no SessionStart hook in
   this plugin (`.codex-plugin/plugin.json` has `"hooks": {}`) and
-  discovers skills by description. In Codex, `finish` and `crossReview`
-  are honored; `mode` is ignored.
+  discovers skills by description. In Codex, `finish`, `crossReview`, and
+  `execution` are honored; `mode` is ignored.
 - **Cross-review calls CLIs directly**, not `openai/codex-plugin-cc`:
   `codex review --base <base>` (Codex CLI ≥ 0.160 has it natively) and
   `claude -p`. Symmetric, works in both harnesses, no plugin dependency.
@@ -49,7 +49,8 @@ Three fork-only changes:
 {
   "mode": "auto",
   "finish": "ask",
-  "crossReview": false
+  "crossReview": false,
+  "execution": "ask"
 }
 ```
 
@@ -58,6 +59,7 @@ Three fork-only changes:
 | `mode` | `"auto"` \| `"manual"` | `"auto"` | `manual`: hook injects a short notice instead of the bootstrap; skills only via `/sp`. Claude Code only. |
 | `finish` | `"ask"` \| `"pr"` | `"ask"` | `pr`: `finishing-a-development-branch` skips the menu and goes straight to the PR option. |
 | `crossReview` | `true` \| `false` | `false` | `true`: before any PR push, run the cross-provider review loop. |
+| `execution` | `"ask"` \| `"subagent"` \| `"native"` | `"ask"` | `subagent` / `native`: `writing-plans` treats the execution method as already supplied (subagent-driven-development / executing-plans) and asks only for plan review. |
 
 Unknown keys are ignored. Unknown values for a known key fall back to the
 default for that key.
@@ -119,9 +121,11 @@ Body:
 3. Classify `$ARGUMENTS`:
    - bug, failure, broken test, unexpected behavior → `systematic-debugging`
    - new feature, change, "build/add/make" → `brainstorming`
-   - an existing plan file or "execute the plan" →
-     `subagent-driven-development` when a subagent tool is available,
-     otherwise `executing-plans`
+   - an existing plan file or "execute the plan" → per `execution`:
+     `subagent` → `subagent-driven-development`, `native` →
+     `executing-plans`; `ask` → ask which (recommend subagent-driven when a
+     subagent tool exists). `subagent` without a subagent tool → `native`,
+     said out loud.
    - "finish", "open the PR", "wrap up" → `finishing-a-development-branch`
    - ambiguous → ask one question to classify
 4. Follow the chain the invoked skill defines through to its terminal
@@ -137,7 +141,8 @@ Frontmatter: `name: sp-init`, `disable-model-invocation: true`.
 Flow:
 
 1. Show the effective config and which file each value comes from.
-2. Ask, one question at a time: `mode`, `finish`, `crossReview`, and the
+2. Ask, one question at a time: `mode`, `finish`, `crossReview`,
+   `execution`, and the
    destination (project committed / project local / global).
 3. If `crossReview: true`, check the other side's reviewer: in Claude Code
    `codex login status`; in Codex `claude --version`. On failure, explain
@@ -224,9 +229,27 @@ silently. If the human partner says to proceed, the PR section reads
 **Tests failing after a fix:** stop the loop, report, and follow
 Step 1's rule (no PR on a red suite).
 
-## Component 6: README (fork section)
+## Component 6: `writing-plans` honors `execution`
 
-Short section: what the three keys do, the file locations and precedence,
+In the Execution Handoff, before choosing which prompt to show, resolve the
+effective config:
+
+- `execution: "subagent"` or `"native"` counts as "an execution method has
+  already been supplied". Announce "Project config sets
+  `execution: <value>`." and use the existing "already supplied" prompt:
+  ask only whether the plan captures what the human partner wants. **The
+  plan-review gate stays.** After approval, use the mapped sub-skill
+  (`subagent` → `subagent-driven-development`, `native` →
+  `executing-plans`).
+- `execution: "subagent"` with no subagent tool in this harness → use
+  `native` and say so.
+- `execution: "ask"` (default) → unchanged.
+- An execution method the human partner states explicitly in the
+  conversation wins over the config.
+
+## Component 7: README (fork section)
+
+Short section: what the four keys do, the file locations and precedence,
 `/sp` and `/sp-init`, and a recommendation to gitignore
 `.superpowers/config.local.json` (per repo or in the global gitignore).
 
@@ -240,6 +263,7 @@ Short section: what the three keys do, the file locations and precedence,
 | `skills/sp-init/project-config.md` | new — single source for schema, lookup order, merge rules (read by `sp-init` and `finishing`) |
 | `skills/finishing-a-development-branch/SKILL.md` | Load Project Config step, `finish: pr` shortcut, cross-review call, rationalization row |
 | `skills/requesting-code-review/cross-provider-review.md` | new |
+| `skills/writing-plans/SKILL.md` | Execution Handoff reads `execution` |
 | `tests/hooks/test-session-start.sh` | new cases (below) |
 | `README.md` | fork section |
 
@@ -278,11 +302,14 @@ leaks in.
    Claude Code → `codex review` runs, loop runs, PR body has the review
    section.
 6. Same in Codex → reviewer is `claude -p`.
+7. `execution: native` + a finished plan → the handoff announces the
+   config and asks only for plan review (no method menu).
 
 ## Out of scope
 
 - Manual mode in Codex or any harness other than Claude Code.
 - `finish` values other than `ask` / `pr`.
+- Skipping the plan-review gate via config.
 - Choosing a specific reviewer/model in config (always "the other one").
 - Cross-review before local merges.
 - Upstream PR.

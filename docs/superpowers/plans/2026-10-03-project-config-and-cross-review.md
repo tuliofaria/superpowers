@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a layered per-project config (`mode`, `finish`, `crossReview`) to this fork, a `/sp` manual-mode entry point plus `/sp-init` setup, and a cross-provider (Codex ↔ Claude) review loop before PRs.
+**Goal:** Add a layered per-project config (`mode`, `finish`, `crossReview`, `execution`) to this fork, a `/sp` manual-mode entry point plus `/sp-init` setup, and a cross-provider (Codex ↔ Claude) review loop before PRs.
 
-**Architecture:** The SessionStart hook resolves only `mode` with a pure-bash regex and swaps the bootstrap for a short notice when manual. Everything else is skill prose: one shared reference file defines the config schema and lookup order; `sp`, `sp-init`, and `finishing-a-development-branch` read it; a new procedure file under `requesting-code-review` runs the reviewer CLI of the other provider.
+**Architecture:** The SessionStart hook resolves only `mode` with a pure-bash regex and swaps the bootstrap for a short notice when manual. Everything else is skill prose: one shared reference file defines the config schema and lookup order; `sp`, `sp-init`, and `finishing-a-development-branch` read it; a new procedure file under `requesting-code-review` runs the reviewer CLI of the other provider; `writing-plans` reads `execution` in its handoff.
 
 **Tech Stack:** bash (hook + tests, node only inside existing test assertions), Markdown skills, `codex` CLI ≥ 0.160, `claude` CLI.
 
@@ -18,8 +18,9 @@
   - `<repo>/.superpowers/config.local.json`, then `<main-worktree-root>/.superpowers/config.local.json`
   - `<repo>/.superpowers/config.json`
   - `~/.config/superpowers/config.json`
-- Keys and defaults: `mode` (`"auto"` | `"manual"`, default `"auto"`), `finish` (`"ask"` | `"pr"`, default `"ask"`), `crossReview` (`true` | `false`, default `false`). Unknown keys ignored; unknown values fall back to the key's default.
-- Manual mode is Claude Code only; Codex honors `finish` and `crossReview` only.
+- Keys and defaults: `mode` (`"auto"` | `"manual"`, default `"auto"`), `finish` (`"ask"` | `"pr"`, default `"ask"`), `crossReview` (`true` | `false`, default `false`), `execution` (`"ask"` | `"subagent"` | `"native"`, default `"ask"`). Unknown keys ignored; unknown values fall back to the key's default.
+- Manual mode is Claude Code only; Codex honors `finish`, `crossReview`, and `execution` only.
+- `execution` never skips the plan-review gate; an execution method stated explicitly in the conversation wins over the config.
 - Cross-review: `codex review --base <base>` (this CLI rejects `--base` combined with a custom prompt — verified on 0.160.0) / `claude -p`. Max 2 rounds. Failures stop and ask; never skip silently.
 - macOS has no `timeout` command — never use it in procedures; use the harness's background/timeout facilities.
 - `/sp-init` never commits; asks before touching `.gitignore`.
@@ -48,6 +49,7 @@ Known limitation (documented, not tested): the hook does not validate JSON struc
 | `skills/sp/SKILL.md` (create) | `/sp` router |
 | `skills/requesting-code-review/cross-provider-review.md` (create) | Cross-provider review loop procedure |
 | `skills/finishing-a-development-branch/SKILL.md` (modify) | Load config step, `finish: pr`, cross-review call, rationalization row |
+| `skills/writing-plans/SKILL.md` (modify) | Execution Handoff reads `execution` |
 | `tests/project-config/test-skill-structure.sh` (create) | Structural checks for the new/changed skill files |
 | `README.md` (modify) | Fork section |
 
@@ -309,8 +311,8 @@ git commit -m "feat(hook): manual mode from project config"
 - Test: `tests/project-config/test-skill-structure.sh`
 
 **Interfaces:**
-- Produces: `skills/sp-init/project-config.md` — the single reference other skills link to (from `skills/<name>/SKILL.md` the relative path is `../sp-init/project-config.md`). It defines the "effective config" procedure that Tasks 3 and 5 rely on by name: **"Resolve the effective config"**.
-- Produces: `tests/project-config/test-skill-structure.sh` with helpers `require_file <path>` and `require_text <path> <literal>`; Tasks 3–5 append checks to it.
+- Produces: `skills/sp-init/project-config.md` — the single reference other skills link to (from `skills/<name>/SKILL.md` the relative path is `../sp-init/project-config.md`). It defines the "effective config" procedure that Tasks 3, 5, and 6 rely on by name: **"Resolve the effective config"**.
+- Produces: `tests/project-config/test-skill-structure.sh` with helpers `require_file <path>` and `require_text <path> <literal>`; Tasks 3–6 append checks to it.
 
 - [ ] **Step 1: Write the failing structure test**
 
@@ -353,6 +355,8 @@ require_text "skills/sp-init/SKILL.md" "name: sp-init"
 require_text "skills/sp-init/SKILL.md" "disable-model-invocation: true"
 require_text "skills/sp-init/SKILL.md" "project-config.md"
 require_text "skills/sp-init/SKILL.md" "codex login status"
+require_text "skills/sp-init/SKILL.md" "\`execution\`"
+require_text "skills/sp-init/project-config.md" '"execution": "ask"'
 require_text "skills/sp-init/SKILL.md" ".gitignore"
 require_text "skills/sp-init/SKILL.md" "Never commit"
 
@@ -382,7 +386,8 @@ files, all with the same flat shape:
 {
   "mode": "auto",
   "finish": "ask",
-  "crossReview": false
+  "crossReview": false,
+  "execution": "ask"
 }
 ```
 
@@ -391,6 +396,7 @@ files, all with the same flat shape:
 | `mode` | `"auto"` \| `"manual"` | `"auto"` | `manual`: superpowers stays quiet until your human partner runs `/sp`. Claude Code only — the SessionStart hook reads it. |
 | `finish` | `"ask"` \| `"pr"` | `"ask"` | `pr`: `finishing-a-development-branch` skips its menu and opens a PR. |
 | `crossReview` | `true` \| `false` | `false` | `true`: before any PR push, run the cross-provider review loop. |
+| `execution` | `"ask"` \| `"subagent"` \| `"native"` | `"ask"` | How an approved plan is executed: `subagent` → `superpowers:subagent-driven-development`, `native` → `superpowers:executing-plans`, `ask` → ask each time. `subagent` without a subagent tool runs as `native`, said out loud. Never skips plan review. |
 
 Unknown keys are ignored. An unknown value for a known key means that
 key's default.
@@ -446,7 +452,8 @@ config") and show each key with its value and the file it came from
 1. `mode` — "auto" (superpowers triggers on its own) or "manual" (only via `/sp`; Claude Code only)?
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
-4. Destination — project committed (`.superpowers/config.json`), project local (`.superpowers/config.local.json`), or global (`~/.config/superpowers/config.json`)?
+4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
+5. Destination — project committed (`.superpowers/config.json`), project local (`.superpowers/config.local.json`), or global (`~/.config/superpowers/config.json`)?
 
 Offer the current effective value as the default answer for each.
 
@@ -519,6 +526,7 @@ require_text "skills/sp/SKILL.md" "superpowers:systematic-debugging"
 require_text "skills/sp/SKILL.md" "superpowers:brainstorming"
 require_text "skills/sp/SKILL.md" "superpowers:subagent-driven-development"
 require_text "skills/sp/SKILL.md" "superpowers:executing-plans"
+require_text "skills/sp/SKILL.md" "../sp-init/project-config.md"
 require_text "skills/sp/SKILL.md" "superpowers:finishing-a-development-branch"
 require_text "skills/sp/SKILL.md" "rest of this session"
 ```
@@ -560,7 +568,7 @@ session.
 |---|---|
 | A bug, failure, broken test, or unexpected behavior | `superpowers:systematic-debugging` |
 | A new feature, a change, or anything to build, add, or make | `superpowers:brainstorming` |
-| An existing plan file, or "execute the plan" | `superpowers:subagent-driven-development` if you have a subagent tool, otherwise `superpowers:executing-plans` |
+| An existing plan file, or "execute the plan" | Per the project config's `execution` ([project-config.md](../sp-init/project-config.md)): `subagent` → `superpowers:subagent-driven-development`; `native` → `superpowers:executing-plans`; `ask` → ask which, recommending subagent-driven when you have a subagent tool. `subagent` without a subagent tool → `native`, said out loud. |
 | Finishing work: "finish", "open the PR", "wrap up" | `superpowers:finishing-a-development-branch` |
 
 Empty arguments: ask your human partner what they want to do, then route.
@@ -838,7 +846,64 @@ git commit -m "feat(finishing): honor finish and crossReview project config"
 
 ---
 
-### Task 6: README fork section and behavioral verification
+### Task 6: `writing-plans` honors `execution`
+
+**Files:**
+- Modify: `skills/writing-plans/SKILL.md`
+- Test: `tests/project-config/test-skill-structure.sh` (append)
+
+**Interfaces:**
+- Consumes: `../sp-init/project-config.md` "Resolve the effective config" and the `execution` key (Task 2).
+
+- [ ] **Step 1: Append failing checks**
+
+Insert before the final `if [[ "$FAILURES" -gt 0 ]]` block:
+
+```bash
+# --- writing-plans honors execution ---
+F="skills/writing-plans/SKILL.md"
+require_text "$F" "../sp-init/project-config.md"
+require_text "$F" "Project config sets \`execution: <value>\`"
+require_text "$F" "stated explicitly in the conversation wins over the config"
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `tests/project-config/test-skill-structure.sh`
+Expected: three `[FAIL] skills/writing-plans/SKILL.md lacks: …` lines, `STATUS: FAILED`.
+
+- [ ] **Step 3: Edit the Execution Handoff**
+
+In `skills/writing-plans/SKILL.md`, insert immediately before the line `**When no execution method has already been supplied:**`:
+
+```markdown
+**Project config.** Before choosing which prompt to use, resolve the
+effective config ([project-config.md](../sp-init/project-config.md),
+"Resolve the effective config"). `execution: "subagent"` or
+`execution: "native"` counts as an execution method already supplied:
+say "Project config sets `execution: <value>`." and use the
+already-supplied prompt below — plan review still happens. `subagent` with
+no subagent tool in this harness becomes `native`; say so. A method your
+human partner stated explicitly in the conversation wins over the config.
+`execution: "ask"` (the default) changes nothing.
+
+```
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `tests/project-config/test-skill-structure.sh`
+Expected: `STATUS: PASSED`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add skills/writing-plans/SKILL.md tests/project-config/test-skill-structure.sh
+git commit -m "feat(writing-plans): honor execution project config"
+```
+
+---
+
+### Task 7: README fork section and behavioral verification
 
 **Files:**
 - Modify: `README.md`
@@ -858,7 +923,7 @@ the JSON by hand — details in
 [`skills/sp-init/project-config.md`](skills/sp-init/project-config.md).
 
 ```json
-{ "mode": "manual", "finish": "pr", "crossReview": true }
+{ "mode": "manual", "finish": "pr", "crossReview": true, "execution": "native" }
 ```
 
 - **`mode: "manual"`** (Claude Code only) — superpowers stays quiet until
@@ -870,6 +935,9 @@ the JSON by hand — details in
   branch (Claude Code → `codex review`, Codex → `claude -p`), verified
   findings are fixed in at most two rounds, and the PR body lists fixed /
   rejected / open findings.
+- **`execution: "subagent" | "native"`** — after you approve a plan, it
+  runs with that method without asking (`subagent` → subagent-driven
+  development, `native` → in-session execution). You still review the plan.
 
 Files, highest precedence first: `.superpowers/config.local.json`
 (personal — add it to `.gitignore`), `.superpowers/config.json`
@@ -928,7 +996,11 @@ Expected: `manual.jsonl:0`, `sp.jsonl` ≥ 1, `auto.jsonl` ≥ 1. If the grep pa
 
 Ask your human partner for a scratch GitHub repo they are happy to open a PR in. In it, with `.superpowers/config.local.json` = `{"finish": "pr", "crossReview": true}`, make a small change on a branch and, in Claude Code with `--plugin-dir "$FORK"`, ask to finish the branch. Expect: no menu, `codex review --base main` runs, findings handled, PR body contains `## Cross-provider review (Codex)`. Repeat from Codex; expect `claude -p` and `## Cross-provider review (Claude)`.
 
-- [ ] **Step 8: Restore**
+- [ ] **Step 8: `execution` check**
+
+In `$SANDBOX` set `.superpowers/config.json` to `{"execution": "native"}`, then in an interactive `claude --plugin-dir "$FORK"` session ask for a tiny feature and approve the design and spec. Expected at the plan handoff: "Project config sets `execution: native`." followed only by the plan-review question — no Subagent-driven/Native menu. After approving, the session invokes `superpowers:executing-plans`.
+
+- [ ] **Step 9: Restore**
 
 ```bash
 claude plugin enable superpowers@claude-plugins-official
@@ -936,6 +1008,6 @@ claude plugin enable superpowers@claude-plugins-official
 
 Unless your human partner has switched to the fork as their installed plugin — ask before re-enabling.
 
-- [ ] **Step 9: Report**
+- [ ] **Step 10: Report**
 
 Report each behavioral check's result with the evidence (counts, file contents, PR URL). Any failure is reported as a failure, not worked around.
