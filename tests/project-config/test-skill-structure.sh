@@ -67,6 +67,8 @@ require_text "$F" "No round 3"
 require_text "$F" "## Cross-provider review ("
 require_text "$F" "Never skip the review silently"
 require_text "$F" "escalated"
+require_text "$F" "[BASE_SHA]"
+require_text "$F" "exit="
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
