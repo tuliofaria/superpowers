@@ -54,6 +54,7 @@ require_text "skills/sp/SKILL.md" "superpowers:executing-plans"
 require_text "skills/sp/SKILL.md" "../sp-init/project-config.md"
 require_text "skills/sp/SKILL.md" "superpowers:finishing-a-development-branch"
 require_text "skills/sp/SKILL.md" "rest of this session"
+require_text "skills/sp/SKILL.md" "it wins over the config"
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
