@@ -90,6 +90,8 @@ New function `resolve_mode`:
 - Returns `manual` only for the exact value `manual`; anything else
   (missing, unreadable, malformed, other values) returns `auto`.
 - Never fails the hook: all errors resolve to `auto`.
+- Known limitation: a regex, not a JSON parser. A structurally broken file
+  whose `"mode": "manual"` pair is intact still resolves to manual.
 
 Behavior:
 
@@ -183,9 +185,8 @@ other one:
 - **In Claude Code → Codex:**
   `codex review --base <base-branch>` from the repo root, output
   redirected to a temp file, run in the background (multi-file reviews
-  are slow). Timeout 15 minutes. If `codex review` accepts custom
-  instructions alongside `--base`, pass a short description and the plan
-  path; otherwise `--base` only (verify during implementation).
+  are slow). Timeout 15 minutes. `--base` only: Codex CLI 0.160.0 rejects
+  custom instructions combined with `--base` (verified).
 - **In Codex → Claude:**
   `claude -p "<prompt>"` where `<prompt>` is `code-reviewer.md` filled
   with `{DESCRIPTION}`, `{PLAN_OR_REQUIREMENTS}`, `{BASE_SHA}`
@@ -236,6 +237,7 @@ Short section: what the three keys do, the file locations and precedence,
 | `hooks/session-start` | `resolve_mode` + manual-mode notice |
 | `skills/sp/SKILL.md` | new |
 | `skills/sp-init/SKILL.md` | new |
+| `skills/sp-init/project-config.md` | new — single source for schema, lookup order, merge rules (read by `sp-init` and `finishing`) |
 | `skills/finishing-a-development-branch/SKILL.md` | Load Project Config step, `finish: pr` shortcut, cross-review call, rationalization row |
 | `skills/requesting-code-review/cross-provider-review.md` | new |
 | `tests/hooks/test-session-start.sh` | new cases (below) |
