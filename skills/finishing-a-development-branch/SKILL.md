@@ -69,6 +69,14 @@ Confirm before merging: merging into the wrong base is expensive to undo.
 green suite and Step 3's base branch still apply; discard is never
 automatic.
 
+If the current branch is `<base-branch>`, or HEAD has no commits ahead of
+it, do not take the shortcut — Option 2 would push unreviewed commits to
+the remote base branch. Present the menu below instead and say why.
+
+When you do take the shortcut, anything you would have reported to your
+human partner at the menu (rulings, residual review findings from
+execution) goes into the PR body and your final report.
+
 **Otherwise (`finish: "ask"`):**
 
 **Normal repo and named-branch worktree — present exactly these 3 options:**

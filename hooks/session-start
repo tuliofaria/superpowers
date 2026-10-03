@@ -35,7 +35,8 @@ read_mode_from() {
 }
 
 # Resolve the project's superpowers mode: "manual" or "auto".
-# The first file that defines mode wins, in this order:
+# The first file that defines a valid mode (manual or auto) wins, in this
+# order; any other value is skipped and the next layer is consulted:
 #   <repo>/.superpowers/config.local.json
 #   <main worktree root>/.superpowers/config.local.json  (untracked, so absent in linked worktrees)
 #   <repo>/.superpowers.json
@@ -57,12 +58,9 @@ resolve_mode() {
 
     for file in "${candidates[@]}"; do
         if value=$(read_mode_from "$file"); then
-            if [ "$value" = "manual" ]; then
-                printf 'manual'
-            else
-                printf 'auto'
-            fi
-            return 0
+            case "$value" in
+                manual|auto) printf '%s' "$value"; return 0 ;;
+            esac
         fi
     done
     printf 'auto'

@@ -16,7 +16,7 @@ config") and show each key with its value and the file it came from
 
 ## Step 2: Ask, one question at a time
 
-1. `mode` — "auto" (superpowers triggers on its own) or "manual" (only via `/sp`; Claude Code only)?
+1. `mode` — "auto" (superpowers triggers on its own) or "manual" (only via `/sp`; applies in harnesses that run the SessionStart hook, not Codex)?
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
 4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
@@ -56,7 +56,7 @@ main checkout; see project-config.md, `<main>`).
 - Exit 0 (already ignored, e.g. by a `.superpowers/` rule): say so; do
   not ask.
 - Otherwise ask: "Add `.superpowers/config.local.json` to this repo's
-  `.gitignore`?" On yes, append that line to `<repo>/.gitignore`. On no,
+  `.gitignore`?" On yes, append that line to `<main>/.gitignore`. On no,
   change nothing.
 
 **Project committed destination:** run `git check-ignore -q .superpowers.json`.

@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 Your human partner ran `/sp` with: $ARGUMENTS
 
+If `$ARGUMENTS` appears literally above, take the task from your human partner's message.
+
 **Announce:** "Superpowers is active for the rest of this session."
 
 From here on, superpowers is fully active in this session, even when the

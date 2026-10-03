@@ -320,6 +320,15 @@ assert_command_output \
     CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
     bash "$HOOK_UNDER_TEST"
 
+home="$(make_home mode-invalid-falls-through)"; repo="$(make_repo mode-invalid-falls-through)"
+write_file "$repo/.superpowers/config.local.json" '{"mode": "Manual"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
+assert_command_output \
+    "invalid value in a higher layer falls through to the next layer" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
 home="$(make_home mode-cursor)"; repo="$(make_repo mode-cursor)"
 write_file "$repo/.superpowers.json" '{"mode": "manual"}'
 assert_command_output \

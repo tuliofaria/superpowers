@@ -36,7 +36,7 @@ fill the placeholders `[DESCRIPTION]` (what was built),
 `[PLAN_OR_REQUIREMENTS]` (plan or spec path), `[BASE_SHA]`
 (`git merge-base <base-branch> HEAD`), `[HEAD_SHA]` (`git rev-parse HEAD`).
 Write the filled prompt to a temp file with your harness's file-write tool
-(not echo/printf), e.g. `/tmp/cross-review-prompt-$(date +%s).md`, and note
+(not echo/printf), e.g. `/tmp/cross-review-prompt.md`, and note
 its literal path. Then:
 
 ```bash

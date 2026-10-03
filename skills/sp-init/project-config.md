@@ -14,7 +14,7 @@ files, all with the same flat shape:
 
 | Key | Values | Default | Effect |
 |---|---|---|---|
-| `mode` | `"auto"` \| `"manual"` | `"auto"` | `manual`: superpowers stays quiet until your human partner runs `/sp`. Claude Code only — the SessionStart hook reads it. |
+| `mode` | `"auto"` \| `"manual"` | `"auto"` | `manual`: superpowers stays quiet until your human partner runs `/sp`. Applies in harnesses that run the SessionStart hook (not Codex) — the hook reads it. |
 | `finish` | `"ask"` \| `"pr"` | `"ask"` | `pr`: `finishing-a-development-branch` skips its menu and opens a PR. |
 | `crossReview` | `true` \| `false` | `false` | `true`: before any PR push, run the cross-provider review loop. |
 | `execution` | `"ask"` \| `"subagent"` \| `"native"` | `"ask"` | How an approved plan is executed: `subagent` → `superpowers:subagent-driven-development`, `native` → `superpowers:executing-plans`, `ask` → ask each time. `subagent` without a subagent tool runs as `native`, said out loud. Never skips plan review. A method your human partner states explicitly in the conversation wins over this setting. |

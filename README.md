@@ -315,7 +315,7 @@ the JSON by hand — details in
 { "mode": "manual", "finish": "pr", "crossReview": true, "execution": "native" }
 ```
 
-- **`mode: "manual"`** (Claude Code only) — superpowers stays quiet until
+- **`mode: "manual"`** (harnesses that run the SessionStart hook, not Codex) — superpowers stays quiet until
   you run `/sp <task>`; `/sp` routes the task (bug → debugging, feature →
   brainstorming, plan → execution, "finish" → finishing) and stays active
   for the rest of the session.
