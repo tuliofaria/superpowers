@@ -7,9 +7,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Read using-superpowers content
-using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>&1 || echo "Error reading using-superpowers skill")
-
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude
 # faster than the character-by-character loop this replaces.
@@ -23,8 +20,63 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
-using_superpowers_escaped=$(escape_for_json "$using_superpowers_content")
-session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the full content of your 'superpowers:using-superpowers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n</EXTREMELY_IMPORTANT>"
+# Print the "mode" value defined in a config file. Fails when the file is
+# missing or does not define a quoted mode. A regex, not a JSON parser:
+# the hook stays pure bash.
+read_mode_from() {
+    local file="$1" content
+    [ -f "$file" ] || return 1
+    content=$(cat "$file" 2>/dev/null) || return 1
+    if [[ "$content" =~ \"mode\"[[:space:]]*:[[:space:]]*\"([A-Za-z]*)\" ]]; then
+        printf '%s' "${BASH_REMATCH[1]}"
+        return 0
+    fi
+    return 1
+}
+
+# Resolve the project's superpowers mode: "manual" or "auto".
+# The first file that defines mode wins, in this order:
+#   <repo>/.superpowers/config.local.json
+#   <main worktree root>/.superpowers/config.local.json  (untracked, so absent in linked worktrees)
+#   <repo>/.superpowers.json
+#   ~/.config/superpowers/config.json
+resolve_mode() {
+    local start_dir="${CLAUDE_PROJECT_DIR:-$PWD}"
+    local repo common_dir main_root value file
+    repo=$(git -C "$start_dir" rev-parse --show-toplevel 2>/dev/null) || repo="$start_dir"
+    common_dir=$(git -C "$start_dir" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common_dir=""
+
+    local candidates=("$repo/.superpowers/config.local.json")
+    if [ -n "$common_dir" ]; then
+        main_root=$(dirname "$common_dir")
+        if [ "$main_root" != "$repo" ]; then
+            candidates+=("$main_root/.superpowers/config.local.json")
+        fi
+    fi
+    candidates+=("$repo/.superpowers.json" "${HOME:-}/.config/superpowers/config.json")
+
+    for file in "${candidates[@]}"; do
+        if value=$(read_mode_from "$file"); then
+            if [ "$value" = "manual" ]; then
+                printf 'manual'
+            else
+                printf 'auto'
+            fi
+            return 0
+        fi
+    done
+    printf 'auto'
+}
+
+if [ "$(resolve_mode)" = "manual" ]; then
+    manual_notice="Superpowers is installed in **manual mode** for this project. Do not invoke superpowers skills on your own initiative. They become active only when your human partner runs \`/sp\` (or \`/superpowers:sp\`), or if \`/sp\` was already run earlier in this session - in that case keep following superpowers as activated."
+    session_context="<EXTREMELY_IMPORTANT>\n$(escape_for_json "$manual_notice")\n</EXTREMELY_IMPORTANT>"
+else
+    # Read using-superpowers content
+    using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>&1 || echo "Error reading using-superpowers skill")
+    using_superpowers_escaped=$(escape_for_json "$using_superpowers_content")
+    session_context="<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n**Below is the full content of your 'superpowers:using-superpowers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n</EXTREMELY_IMPORTANT>"
+fi
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context (snake_case).

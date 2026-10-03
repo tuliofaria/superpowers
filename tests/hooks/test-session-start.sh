@@ -30,6 +30,23 @@ make_home() {
     printf '%s\n' "$home"
 }
 
+make_repo() {
+    local dir="$TEST_ROOT/$1/repo"
+    mkdir -p "$dir"
+    git -C "$dir" init -q
+    git -C "$dir" -c user.email=test@example.com -c user.name=test \
+        commit -q --allow-empty -m init
+    printf '%s\n' "$dir"
+}
+
+write_file() {
+    mkdir -p "$(dirname "$1")"
+    printf '%s\n' "$2" > "$1"
+}
+
+BOOTSTRAP_MARKER="IF A SKILL APPLIES TO YOUR TASK"
+MANUAL_MARKER="manual mode"
+
 assert_command_output() {
     local description="$1"
     local shape="$2"
@@ -216,6 +233,108 @@ assert_command_output \
     "$legacy_home" \
     CLAUDE_PLUGIN_ROOT="$REPO_ROOT" \
     bash "$HOOK_UNDER_TEST"
+
+echo "Project config mode tests"
+
+home="$(make_home mode-none)"; repo="$(make_repo mode-none)"
+assert_command_output \
+    "no config anywhere injects the full bootstrap" \
+    "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-global)"; repo="$(make_repo mode-global)"
+write_file "$home/.config/superpowers/config.json" '{"mode": "manual"}'
+assert_command_output \
+    "global mode manual injects the manual notice" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-project)"; repo="$(make_repo mode-project)"
+write_file "$repo/.superpowers.json" '{ "finish": "pr", "mode": "manual" }'
+assert_command_output \
+    "project mode manual injects the manual notice" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-local)"; repo="$(make_repo mode-local)"
+write_file "$repo/.superpowers/config.local.json" '{"mode":"manual"}'
+assert_command_output \
+    "local mode manual injects the manual notice" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-local-wins)"; repo="$(make_repo mode-local-wins)"
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
+write_file "$repo/.superpowers/config.local.json" '{"mode": "auto"}'
+assert_command_output \
+    "local auto overrides project manual" \
+    "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-project-wins)"; repo="$(make_repo mode-project-wins)"
+write_file "$home/.config/superpowers/config.json" '{"mode": "auto"}'
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
+assert_command_output \
+    "project manual overrides global auto" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-worktree)"; repo="$(make_repo mode-worktree)"
+write_file "$repo/.superpowers/config.local.json" '{"mode": "manual"}'
+worktree="$TEST_ROOT/mode-worktree/wt"
+git -C "$repo" worktree add -q -b feature "$worktree"
+assert_command_output \
+    "local config in the main checkout applies inside a linked worktree" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$worktree" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-no-git)"
+plain="$TEST_ROOT/mode-no-git/plain"
+write_file "$plain/.superpowers.json" '{"mode": "manual"}'
+assert_command_output \
+    "outside a git repo the project dir config still applies" \
+    "nested" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$plain" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-unquoted)"; repo="$(make_repo mode-unquoted)"
+write_file "$repo/.superpowers.json" '{"mode": manual}'
+assert_command_output \
+    "unquoted mode value resolves to auto" \
+    "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-case)"; repo="$(make_repo mode-case)"
+write_file "$repo/.superpowers.json" '{"mode": "Manual"}'
+assert_command_output \
+    "wrong-case mode value resolves to auto" \
+    "nested" "$BOOTSTRAP_MARKER" "$MANUAL_MARKER" "$home" \
+    CLAUDE_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PROJECT_DIR="$repo" \
+    bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-cursor)"; repo="$(make_repo mode-cursor)"
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
+assert_command_output \
+    "manual notice uses the Cursor output shape" \
+    "cursor" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    CURSOR_PLUGIN_ROOT="$REPO_ROOT" CLAUDE_PLUGIN_ROOT="$REPO_ROOT" \
+    CLAUDE_PROJECT_DIR="$repo" bash "$HOOK_UNDER_TEST"
+
+home="$(make_home mode-sdk)"; repo="$(make_repo mode-sdk)"
+write_file "$repo/.superpowers.json" '{"mode": "manual"}'
+assert_command_output \
+    "manual notice uses the SDK output shape" \
+    "sdk" "$MANUAL_MARKER" "$BOOTSTRAP_MARKER" "$home" \
+    COPILOT_CLI=1 CLAUDE_PLUGIN_ROOT="$REPO_ROOT" \
+    CLAUDE_PROJECT_DIR="$repo" bash "$HOOK_UNDER_TEST"
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
