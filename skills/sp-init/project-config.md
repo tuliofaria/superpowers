@@ -8,7 +8,8 @@ files, all with the same flat shape:
   "mode": "auto",
   "finish": "ask",
   "crossReview": false,
-  "execution": "ask"
+  "execution": "ask",
+  "watchPr": false
 }
 ```
 
@@ -18,6 +19,7 @@ files, all with the same flat shape:
 | `finish` | `"ask"` \| `"pr"` | `"ask"` | `pr`: `finishing-a-development-branch` skips its menu and opens a PR. |
 | `crossReview` | `true` \| `false` | `false` | `true`: before any PR push, run the cross-provider review loop. |
 | `execution` | `"ask"` \| `"subagent"` \| `"native"` | `"ask"` | How an approved plan is executed: `subagent` → `superpowers:subagent-driven-development`, `native` → `superpowers:executing-plans`, `ask` → ask each time. `subagent` without a subagent tool runs as `native`, said out loud. Never skips plan review. A method your human partner states explicitly in the conversation wins over this setting. |
+| `watchPr` | `true` \| `false` | `false` | `true`: after finishing opens a PR, it watches the PR until checks and reviews settle — see [pr-watch.md](../finishing-a-development-branch/pr-watch.md). GitHub only. |
 
 Unknown keys are ignored. An unknown value for a known key means that
 key's default.

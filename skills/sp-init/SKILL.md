@@ -20,11 +20,14 @@ config") and show each key with its value and the file it came from
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
 4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
-5. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`, written to `<main>/.superpowers/config.local.json` in a linked worktree), or global (`~/.config/superpowers/config.json`)?
+5. `watchPr` — after opening a PR, keep watching it (CI, CodeRabbit, review threads) until it is ready to merge?
+6. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`, written to `<main>/.superpowers/config.local.json` in a linked worktree), or global (`~/.config/superpowers/config.json`)?
 
 Offer the current effective value as the default answer for each.
 
-## Step 3: Check the reviewer (only when `crossReview` is true)
+## Step 3: Check the tools
+
+**When `crossReview` is true:**
 
 - In Claude Code: run `codex login status`. Expect "Logged in".
 - In Codex: run `claude --version`.
@@ -32,6 +35,10 @@ Offer the current effective value as the default answer for each.
 If the check fails, tell your human partner what is missing (install with
 `npm install -g @openai/codex` and `codex login`, or install Claude Code)
 and continue — the setting is saved anyway.
+
+**When `watchPr` is true:** run `gh auth status`; expect it to report a
+logged-in account. If it fails, tell your human partner to run
+`gh auth login`, and continue — the setting is saved anyway.
 
 ## Step 4: Write the file
 

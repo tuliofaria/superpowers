@@ -36,6 +36,10 @@ require_text "skills/sp-init/SKILL.md" "project-config.md"
 require_text "skills/sp-init/SKILL.md" "codex login status"
 require_text "skills/sp-init/SKILL.md" "\`execution\`"
 require_text "skills/sp-init/project-config.md" '"execution": "ask"'
+require_text "skills/sp-init/project-config.md" '"watchPr": false'
+require_text "skills/sp-init/project-config.md" '| `watchPr` |'
+require_text "skills/sp-init/SKILL.md" '`watchPr`'
+require_text "skills/sp-init/SKILL.md" "gh auth status"
 require_text "skills/sp-init/SKILL.md" ".gitignore"
 require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers/config.local.json"
 require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers.json"
