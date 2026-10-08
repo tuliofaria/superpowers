@@ -312,7 +312,7 @@ the JSON by hand — details in
 [`skills/sp-init/project-config.md`](skills/sp-init/project-config.md).
 
 ```json
-{ "mode": "manual", "finish": "pr", "crossReview": true, "execution": "native" }
+{ "mode": "manual", "finish": "pr", "crossReview": true, "watchPr": true, "execution": "native" }
 ```
 
 - **`mode: "manual"`** (harnesses that run the SessionStart hook, not Codex) — superpowers stays quiet until
@@ -324,6 +324,11 @@ the JSON by hand — details in
   branch (Claude Code → `codex review`, Codex → `claude -p`), verified
   findings are fixed in at most two rounds, and the PR body lists fixed /
   rejected / open findings.
+- **`watchPr: true`** — after the PR opens, finishing watches it: waits
+  for CI, fixes failures, answers review threads (CodeRabbit, Grok PR
+  Reviewer, humans), waits out CodeRabbit's rate limit and re-triggers it,
+  and writes a `## PR watch` report into the PR body. GitHub only; at most
+  3 fix rounds.
 - **`execution: "subagent" | "native"`** — after you approve a plan, it
   runs with that method without asking (`subagent` → subagent-driven
   development, `native` → in-session execution). You still review the plan.

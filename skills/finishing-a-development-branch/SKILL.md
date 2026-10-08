@@ -47,10 +47,11 @@ This determines which menu to show and how cleanup works:
 
 Resolve the effective config as described in
 [project-config.md](../sp-init/project-config.md) ("Resolve the effective
-config"). Two keys matter here:
+config"). Three keys matter here:
 
 - `finish` — `"ask"` (default) or `"pr"`
 - `crossReview` — `false` (default) or `true`
+- `watchPr` — `false` (default) or `true`
 
 Config never blocks: missing files mean defaults.
 
@@ -156,6 +157,11 @@ tooling — its CLI if one is available, or the creation URL most forges
 print when you push — following the repo's PR template and conventions if
 present, and report the URL to your human partner.
 
+**If the project config sets `watchPr: true`:** follow
+[pr-watch.md](pr-watch.md) with the PR number and `<base-branch>`. This
+applies to the detached-HEAD PR option too, and whether you got here from
+the menu or from `finish: "pr"`.
+
 Keep the worktree — your human partner iterates on PR feedback there.
 
 ### Option 3: Keep As-Is
@@ -257,3 +263,4 @@ place. If your platform provides a workspace-exit tool, use it.
 | "The base branch is obviously main" | Confirm the fork point or ask. Merging into the wrong base is expensive to undo. |
 | "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
 | "Config says `pr`, but this one feels like a local merge" | The config is your human partner's standing decision. Follow it; mention the doubt in the report, don't override it. |
+| "Checks are still running — I'll report the URL and stop" | With `watchPr`, the work ends when the PR is ready, not when it is opened. Follow pr-watch.md. |

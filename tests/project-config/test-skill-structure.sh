@@ -81,6 +81,10 @@ require_text "$F" "../sp-init/project-config.md"
 require_text "$F" 'finish: "pr"'
 require_text "$F" "../requesting-code-review/cross-provider-review.md"
 require_text "$F" "Config says \`pr\`, but this one feels like a local merge"
+require_text "$F" "\`watchPr\`"
+require_text "$F" "[pr-watch.md](pr-watch.md)"
+require_text "$F" "Checks are still running — I'll report the URL and stop"
+require_text "README.md" "watchPr"
 
 # --- writing-plans honors execution ---
 F="skills/writing-plans/SKILL.md"
