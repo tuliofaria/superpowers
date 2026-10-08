@@ -132,11 +132,11 @@ registers: that is pending, never green.
   PRs (`gh pr list --state all --limit 5 --json comments`). Whatever is
   still missing after 5 minutes: go on without it and list it under
   **Open**.
-- **After a push:** note the old HEAD's check names first
-  (`gh pr checks <n> --json name`). Up to 5 minutes, until each name is
-  registered on the new HEAD (CodeRabbit's own status, always green, is
-  not enough) and CodeRabbit, if on the PR, reacts to it: reviewing, a
-  review or "No actionable comments" for it, or a rate-limit block with
+- **After a push:** up to 5 minutes, until
+  each name you recorded before the push is registered on the new HEAD
+  (CodeRabbit's own status, always green, is not enough) and CodeRabbit,
+  if on the PR, reacts to it: reviewing, a review or "No actionable
+  comments" for it, or a rate-limit block with
   its `headCommitId`. Then watch what is registered.
 - **After `gh run rerun`:** up to 5 minutes, until that check is no longer
   failed. If it still is, stop and report it under **Open**.
@@ -184,7 +184,10 @@ registers: that is pending, never green.
    - If the round changed code: run the full local suite. If it is red
      and you cannot fix it, stop and report to your human partner:
      no push on a red suite. Then make **one** commit
-     (`fix: address PR review and CI`) and push it once with
+     (`fix: address PR review and CI`).
+     Before the push, record the check names on the PR
+     (`gh pr checks <n> --json name`): once pushed, that command reports
+     the new HEAD. Push once with
      `git push origin HEAD:<headRefName>` (this works from a detached
      HEAD too). If the push is rejected, stop and report it under
      **Open**: post no "Fixed in" reply, and never pull, rebase, or

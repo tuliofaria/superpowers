@@ -120,8 +120,10 @@ registers; that is pending, never green.
   appears (if `.coderabbit.yaml` exists or CodeRabbit commented on one of
   the last 5 PRs). Whatever is still missing after 5 minutes is skipped
   and listed under **Open**.
-- **After a push:** up to 5 minutes, until every check name seen on the
-  old HEAD is registered on the new HEAD (CodeRabbit's own commit status,
+- **After a push:** up to 5 minutes, until every check name recorded
+  before the push (the fix round records them just before `git push`,
+  because afterwards `gh pr checks` reports the new HEAD) is registered
+  on the new HEAD (CodeRabbit's own commit status,
   always green, is not enough) and CodeRabbit, if present, reacts to the
   new HEAD. Then the agent watches what is registered.
 - **After `gh run rerun`:** up to 5 minutes, until that check leaves the
@@ -172,7 +174,8 @@ body are listed in the report, not acted on.
      `gh run rerun <id> --failed` once per run; this does not use a round.
    - If the round changed code, run the full local suite. If it is red
      and cannot be fixed, stop: no push on a red suite.
-   - Then make **one** commit (`fix: address PR review and CI`) and push it
+   - Then make **one** commit (`fix: address PR review and CI`), record
+     the PR's check names (`gh pr checks <n> --json name`), and push it
      with `git push origin HEAD:<headRefName>` (works from a detached
      HEAD). If the push is rejected, stop and report under **Open**: no
      "Fixed in" replies, and never pull, rebase, or force. A round where
