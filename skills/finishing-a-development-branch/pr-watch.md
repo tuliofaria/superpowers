@@ -107,6 +107,16 @@ new point makes it pending; handle it in the next round.
 4. ACT       re-trigger CodeRabbit, or run a fix round; go back to 1
 ```
 
+**After an ACT step, WAIT first waits for it to register**, up to 20
+minutes; if it does not register, stop and report it under **Open**:
+
+- After `@coderabbitai review`: until CodeRabbit acknowledges it — a reply
+  containing `<!-- CodeRabbit review command invocation`, the reviewing
+  marker, or the rate-limit block gone. Until then, never re-trigger again.
+- After a push, if the PR had checks before: until at least one check is
+  registered on the new HEAD SHA. "No checks yet" on a just-pushed HEAD is
+  pending, not green.
+
 **Budget:** at most 3 rounds of fixes (a CI fix counts as a round) and
 2 re-triggers of CodeRabbit.
 
@@ -137,12 +147,19 @@ new point makes it pending; handle it in the next round.
      `superpowers:systematic-debugging`. If the PR caused the failure, fix
      it. If it is flaky or infrastructure, run `gh run rerun <id> --failed`
      once per run; a rerun alone does not use a round.
-   - Run the full local suite. If it is red and you cannot fix it, stop
-     and report to your human partner: no push on a red suite.
-   - Make **one** commit (`fix: address PR review and CI`) and **one**
-     normal push.
+   - If the round changed code: run the full local suite. If it is red
+     and you cannot fix it, stop and report to your human partner:
+     no push on a red suite. Then make **one** commit
+     (`fix: address PR review and CI`) and **one** normal push. A round
+     where every thread is rejected changes no code: replies only, no
+     commit.
    - Reply in each handled thread: "Fixed in `<sha>`: …" or the reason
      for rejecting it. Reply in the language of the thread.
+3. **Otherwise, stop.** If neither applies, or a round would change no
+   code, post no reply, and rerun nothing, stop and report the blocker
+   under **Open**. Examples: CodeRabbit is on the PR, never reviewed it,
+   and is not rate-limited; a check not caused by the PR fails again
+   after its one rerun.
 
 **Waiting.** Use your harness's background execution and timeout, as
 cross-review does:
