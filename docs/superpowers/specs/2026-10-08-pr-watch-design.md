@@ -89,7 +89,8 @@ the review body gives an overall verdict ("Nada bloqueante",
 ## Component 1: `skills/finishing-a-development-branch/pr-watch.md`
 
 Input: PR number and `<base-branch>`. Written in the same voice and
-format as `cross-provider-review.md`.
+format as `cross-provider-review.md`. The file is the source of truth;
+this section summarizes it.
 
 ### Forge check
 
@@ -102,79 +103,129 @@ skips the watch. The PR is already open, so nothing else changes.
 ```
 1. WAIT      until every check on HEAD has finished, and every known
              reviewer that is present has left "reviewing"
-2. EVALUATE  collect what is pending
+2. EVALUATE  collect failing checks, pending threads, and unhandled
+             outside-diff findings
 3. STOP?     if the stop conditions hold: report and end
 4. ACT       re-trigger CodeRabbit, or run a fix round; go back to 1
 ```
 
+**Register first.** Every WAIT starts by waiting, polling about every
+30 seconds, for the last action to register. `gh pr checks` answers
+"no checks reported on the '<branch>' branch" (exit 1) until a check
+registers; that is pending, never green.
+
+- **After the PR is created:** up to 5 minutes, until a check is
+  registered (if the repo has CI: `.github/workflows/` exists or the base
+  branch's head has checks) and until CodeRabbit's summary comment
+  appears (if `.coderabbit.yaml` exists or CodeRabbit commented on one of
+  the last 5 PRs). Whatever is still missing after 5 minutes is skipped
+  and listed under **Open**.
+- **After a push:** up to 5 minutes, until every check name seen on the
+  old HEAD is registered on the new HEAD (CodeRabbit's own commit status,
+  always green, is not enough) and CodeRabbit, if present, reacts to the
+  new HEAD. Then the agent watches what is registered.
+- **After `gh run rerun`:** up to 5 minutes, until that check leaves the
+  failed state; otherwise stop and report under **Open**.
+- **After `@coderabbitai review`:** CodeRabbit counts as reviewing, and is
+  never re-triggered, until a review or "No actionable comments" for HEAD
+  appears, a rate-limit block appears whose `updated_at` is after the
+  comment, or the invocation reply reads "Review finished". After 20
+  minutes without any of these: stop and report under **Open**.
+
+**Outside-diff findings.** CodeRabbit puts findings it cannot place on
+the diff in its review body under "Outside diff range comments (N)",
+not in threads. EVALUATE reads the latest CodeRabbit review body; each
+such comment is a finding for the fix round, recorded as Fixed or
+Rejected in the report (no thread to reply to). "Nitpick comments" in the
+body are listed in the report, not acted on.
+
 **Stop conditions (all must hold):**
 
 1. Every check on HEAD has completed and none failed.
-2. CodeRabbit has "no actionable comments" for HEAD, **or** every
-   CodeRabbit thread is answered. If CodeRabbit is not on the PR at all,
-   this condition holds trivially.
+2. CodeRabbit has "No actionable comments" for HEAD, **or** it has
+   reviewed this PR at least once (a review on any commit, or "No
+   actionable comments" for any commit), every CodeRabbit thread is
+   answered, and every outside-diff finding is handled. If CodeRabbit is
+   not on the PR at all, this condition holds trivially.
 3. No unanswered thread exists from a human or an unknown reviewer, and
-   no unanswered Grok thread exists that is above Minor.
+   no unanswered Grok thread exists that is above Minor and not
+   pre-existing.
 
 **ACT, in priority order:**
 
-1. **CodeRabbit is rate-limited and has never reviewed this PR** (no bot
-   review and no "No actionable comments" for any commit). Wait until
-   the comment's `updated_at` plus N minutes plus 1 minute of slack, then
-   comment `@coderabbitai review`. This uses one of the 2 re-triggers.
-   When the budget is spent, stop and report. If CodeRabbit has reviewed
-   before and only the post-fix re-review is limited, do not re-trigger:
-   stop condition 2 is met once its threads are answered.
+1. **CodeRabbit is rate-limited for HEAD and has never reviewed this
+   PR.** Only a block whose `updated_at` is newer than the last
+   `@coderabbitai review` counts. Wait until `updated_at` plus N minutes
+   plus 1 minute of slack, then comment `@coderabbitai review`. This uses
+   one of the 2 re-triggers. When the budget is spent, stop and report.
+   If CodeRabbit has reviewed before and only the post-fix re-review is
+   limited, do not re-trigger: stop condition 2 is met once its threads
+   and outside-diff findings are handled.
 2. **Fix round.** This uses one of the 3 rounds; when the budget is
    spent, stop and report.
-   - Gather the failing checks and pending threads, and apply
-     `superpowers:receiving-code-review` to each thread. Verify it, then
-     mark it accepted or rejected with a reason.
+   - Gather the failing checks, pending threads, and unhandled
+     outside-diff findings, and apply `superpowers:receiving-code-review`
+     to each. Verify it, then mark it accepted or rejected with a reason.
    - For a failing check, read `gh run view <id> --log-failed` and apply
      `superpowers:systematic-debugging`. If the PR caused the failure,
      fix it. If it is flaky or infrastructure, run
      `gh run rerun <id> --failed` once per run; this does not use a round.
-   - Run the full local suite. If it is red and you cannot fix it, stop:
-     no push on a red suite.
-   - Make **one** commit (`fix: address PR review and CI`) and **one**
-     push.
-   - Reply in each handled thread, either "Fixed in `<sha>`: …" or the
-     reason for rejecting it. Reply in the language of the thread.
+   - If the round changed code, run the full local suite. If it is red
+     and cannot be fixed, stop: no push on a red suite.
+   - Then make **one** commit (`fix: address PR review and CI`) and push it
+     with `git push origin HEAD:<headRefName>` (works from a detached
+     HEAD). If the push is rejected, stop and report under **Open**: no
+     "Fixed in" replies, and never pull, rebase, or force. A round where
+     every finding is rejected changes no code: replies only, no commit.
+   - Only after a successful push (or when nothing was committed), reply
+     in each handled thread, either "Fixed in `<sha>`: …" or the reason
+     for rejecting it, in the language of the thread.
+3. **Otherwise, stop.** If neither applies, or a round would change
+   nothing, stop and report the blocker under **Open** (e.g. CodeRabbit
+   is present, never reviewed, and is not rate-limited; a check not
+   caused by the PR fails again after its one rerun).
 
 **Waiting.** Use the harness's background execution and timeout, as
 cross-review does:
 
-- **CI:** `gh pr checks <n> --watch`.
+- **CI:** `gh pr checks <n> --watch`, once checks are registered, for up
+  to 60 minutes (harness timeout set to match); if checks are still
+  pending, stop and report them under **Open**.
 - **Reviewers:** poll the comments and threads every 2 minutes, for up
   to 20 minutes per wait. If CodeRabbit stays in "reviewing" past that
   limit, report it instead of waiting forever.
-- **Rate-limit waits:** a background `sleep`. In Claude Code, the
-  background command re-invokes the session when it exits. In Codex,
-  run it in the foreground.
+- **Rate-limit waits:** a background `sleep`, with the harness timeout
+  set above the sleep. In Claude Code, the background command re-invokes
+  the session when it exits. In Codex, run it in the foreground. On
+  waking, compare the clock with the target before commenting.
 
 ### Reading the PR
 
+- HEAD and branch: `gh pr view <n> --json headRefOid,headRefName,author`.
 - Issue comments: `gh api repos/<owner>/<repo>/issues/<n>/comments --paginate`.
+- Reviews: `gh api repos/<owner>/<repo>/pulls/<n>/reviews` (`commit_id`, body).
 - Threads: GraphQL `pullRequest.reviewThreads { isResolved isOutdated
-  comments { author { login } body createdAt } }`.
-- Reviews: `gh api repos/<owner>/<repo>/pulls/<n>/reviews` (`commit_id`).
-- HEAD: `gh pr view <n> --json headRefOid`.
+  comments { databaseId author { login } body createdAt } }`.
+- Replies: the reply text is written to a file and sent with
+  `gh api .../pulls/<n>/comments/<databaseId>/replies -F body=@<file>`.
 
 ### Known reviewers (table in the file)
 
 | Reviewer | Recognize by | States | Re-trigger | Severity rule |
 |---|---|---|---|---|
-| CodeRabbit | author `coderabbitai[bot]` | The markers above: reviewing / rate limited / clean / reviewed with findings. A rate limit counts for HEAD only when `headCommitId` matches HEAD. | `@coderabbitai review`, after the wait. **Never** tick "Run on-demand review". | Every thread needs an answer, whatever its label. |
+| CodeRabbit | author `coderabbitai[bot]` (REST) / `coderabbitai` (GraphQL) | The markers above: reviewing / rate limited / clean / reviewed with findings. A rate limit counts for HEAD only when `headCommitId` matches HEAD. | `@coderabbitai review`, after the wait. **Never** tick "Run on-demand review". | Every thread and outside-diff finding needs an answer, whatever its label. |
 | Grok PR Reviewer | body ends with `by Grok PR Reviewer` (the author is the PR author's account) | Present or absent. Never waited for. | None. | The agent classifies each thread from its content, using the review-body verdict as the starting point. Minor and pre-existing threads do not block and need no reply; they go into the report. Anything else is handled like any finding. |
 | Anyone else (humans, unknown bots) | any other thread | Not waited for; existing threads are handled. | None. | Every thread needs an answer. |
 
 ### "Answered"
 
-A thread is answered when either of these holds:
-
-- it is resolved; or
-- after the reviewer's last comment, there is a reply from the PR
-  author's account that does not end with `by Grok PR Reviewer`.
+A thread is answered when it is resolved, or when a reply of ours comes
+after the reviewer's last comment. Ours are the replies the agent posted
+in this watch, and, in a thread someone else opened (Grok included), a
+reply from the PR author's account that does not end with
+`by Grok PR Reviewer`. Every other comment is the reviewer's, so a thread
+the PR author opened on their own PR is answered only by the agent's
+replies from this watch.
 
 If the reviewer comments again after our reply, the agent reads the
 comment. An acknowledgement ("thanks, that resolves it") keeps the
@@ -183,19 +234,20 @@ next round.
 
 ### Report
 
-Write the report in chat. Then write it into the PR body once, at the
-end, with `gh pr edit <n> --body-file <file>`. If a `## PR watch`
-section already exists, replace it; leave the rest of the body
-untouched.
+Every stop, clean or not, ends in the report. Write it in chat. Then
+write it into the PR body once, at the end, with
+`gh pr edit <n> --body-file <file>`. If a `## PR watch` section already
+exists, replace it; leave the rest of the body untouched.
 
 ```markdown
 ## PR watch
 Checks: green · CodeRabbit: no actionable comments (<sha>) · Rounds: 1/3
 - **Fixed:** <finding> — <sha>
 - **Rejected:** <finding> — <reason>
+- **Nitpicks (CodeRabbit):** <point>
 - **Minor (Grok):** <point>
 - **Pre-existing:** <point>
-- **Open:** <what is left when the budget ran out>
+- **Open:** <what is left, and why>
 ```
 
 Write "none" for an empty list. The worktree stays in place.
@@ -254,6 +306,11 @@ using the existing `require_file` / `require_text` helpers):
   - `superpowers:receiving-code-review`
   - `superpowers:systematic-debugging`
   - `## PR watch`
+  - the register-wait, outside-diff, CI-cap, push and reply phrases
+    (`**Register first.**`, `no checks reported`,
+    `Outside diff range comments`, `60 minutes`,
+    `git push origin HEAD:<headRefName>`, `-F body=@<file>`,
+    `**Otherwise, stop.**`)
 - finishing references `pr-watch.md` and `watchPr`.
 - `project-config.md` and `sp-init/SKILL.md` mention `watchPr`.
 
