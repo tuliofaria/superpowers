@@ -217,6 +217,29 @@ else
 fi
 rm -f "$tmp_readme"
 
+# --- pre-PR checks ---
+F="skills/finishing-a-development-branch/pre-pr-checks.md"
+require_file "$F"
+for t in "## Step A: Blast radius" "## Step B: Verify" "## Step C: Fix loop" "## Step D: PR body" \
+         "## Interaction with pr-watch" "superpowers:blast-radius" "superpowers:create-verification-skill" \
+         ".claude/skills/" ".agents/skills/" ".cursor/skills/" \
+         "Generate one now (create-verification-skill, once per repo) or skip verification for this PR?" \
+         "chore: add verify-<app> skill" "fix: update verify-<app> skill" "fix: address pre-PR check findings" \
+         "At most 2 fix rounds" "No PR is opened" "Never edit product code for drift" \
+         "fix the environment, or skip verification for this PR?" \
+         "Exclude the verification skill's own directory" "Never \`git add\` evidence" \
+         "When only one of the two keys is \`true\`" \
+         "## Verification (verify-<app>)" "Not run — " "do not re-run pre-PR checks"; do
+    require_text "$F" "$t"
+done
+F="skills/finishing-a-development-branch/SKILL.md"
+require_text "$F" "[pre-pr-checks.md](pre-pr-checks.md)"
+require_text "$F" "\`blastRadius\`"
+require_order "$F" "[pre-pr-checks.md](pre-pr-checks.md)" "../requesting-code-review/cross-provider-review.md"
+require_text "$F" "The tests pass, so verification is redundant"
+require_text "$F" "This risk is probably fine"
+require_text "$F" "I'll simplify the journey so it passes"
+
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
     exit 1

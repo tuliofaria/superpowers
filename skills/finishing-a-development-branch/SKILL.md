@@ -47,9 +47,11 @@ This determines which menu to show and how cleanup works:
 
 Resolve the effective config as described in
 [project-config.md](../sp-init/project-config.md) ("Resolve the effective
-config"). Three keys matter here:
+config"). Five keys matter here:
 
 - `finish` — `"ask"` (default) or `"pr"`
+- `blastRadius` — `false` (default) or `true`
+- `verify` — `false` (default) or `true`
 - `crossReview` — `false` (default) or `true`
 - `watchPr` — `false` (default) or `true`
 
@@ -139,6 +141,11 @@ git branch -d <feature-branch>
 ```
 
 ### Option 2: Push and Create PR
+
+**If the project config sets `blastRadius: true` or `verify: true`:** first
+follow [pre-pr-checks.md](pre-pr-checks.md) with `<base-branch>`, and
+include its sections in the PR body. This applies to the detached-HEAD PR
+option too, and whether you got here from the menu or from `finish: "pr"`.
 
 **If the project config sets `crossReview: true`:** first run
 [cross-provider-review.md](../requesting-code-review/cross-provider-review.md)
@@ -264,3 +271,6 @@ place. If your platform provides a workspace-exit tool, use it.
 | "The push was rejected — force-push will fix it" | A rejected push means the remote moved. Investigate; force-push only on your human partner's explicit request. |
 | "Config says `pr`, but this one feels like a local merge" | The config is your human partner's standing decision. Follow it; mention the doubt in the report, don't override it. |
 | "Checks are still running — I'll report the URL and stop" | With `watchPr`, the work ends when the PR is ready, not when it is opened. Follow pr-watch.md. |
+| "The tests pass, so verification is redundant" | Tests prove functions; verification proves the app does what a user expects. With `verify`, run it. |
+| "This risk is probably fine" | An unproven risk goes into the PR body as unproven. Never list it as cleared. |
+| "The seed data lacks this case — I'll simplify the journey so it passes" | Never weaken a journey to make it pass. Report the failure; the reason goes in that feature's Gotchas. |
