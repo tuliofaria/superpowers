@@ -1,6 +1,6 @@
 # Vendored pstack skills
 
-These skills are adapted from pstack by Lauren Tan, used under the MIT license (see `LICENSE` in this directory).
+These skills are adapted from pstack by Lauren Tan, used under the MIT license (see `LICENSE` in this directory; each vendored skill directory carries a copy, because Codex packaging ships `skills/` but not `docs/`).
 
 Upstream: https://github.com/cursor/plugins
 Path: harness/pstack/claude-code/skills/

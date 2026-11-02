@@ -50,7 +50,8 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
      failure), never fixed by the generator. Then commit its output
      alone: `chore: add verify-<app> skill`. If `git add` refuses because
      the repo ignores `.claude/`, report it and ask your human partner —
-     `git add -f` the skill directory, or skip verification for this PR.
+     `git add -f` the skill's files by explicit path (never evidence), or
+     skip verification for this PR.
      If it cannot produce a skill that runs, classify why under item 4:
      the app behaving wrong is a Product failure, not an Environment
      one. Skip → the PR section reads

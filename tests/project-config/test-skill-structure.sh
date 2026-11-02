@@ -179,6 +179,9 @@ forbid_text "$F" "disable-model-invocation"
 for t in ".cursor/skills" "\`how\`" "\`why\`" "unslop" "arena"; do forbid_text "$F" "$t"; done
 require_file "docs/vendored/pstack/LICENSE"
 require_text "docs/vendored/pstack/LICENSE" "Lauren Tan"
+for s in blast-radius create-verification-skill maintain-verification-skill; do
+    require_text "skills/$s/LICENSE" "Lauren Tan"
+done
 require_text "docs/vendored/pstack/README.md" "Pinned SHA: ae5650febf4320793844c12c4adaa937f417f8da"
 require_text "docs/vendored/pstack/README.md" "### blast-radius"
 F="skills/create-verification-skill/SKILL.md"
@@ -241,6 +244,8 @@ for t in "## Step A: Blast radius" "## Step B: Verify" "## Step C: Fix loop" "##
     require_text "$F" "$t"
 done
 forbid_text "$F" "treat that as an Environment"
+require_text "$F" "the skill's files by explicit path (never evidence)"
+forbid_text "$F" "\`git add -f\` the skill directory"
 require_text "skills/finishing-a-development-branch/pr-watch.md" "verification was not re-run"
 F="skills/finishing-a-development-branch/SKILL.md"
 require_text "$F" "[pre-pr-checks.md](pre-pr-checks.md)"
