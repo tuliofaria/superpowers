@@ -229,9 +229,11 @@ for t in "## Step A: Blast radius" "## Step B: Verify" "## Step C: Fix loop" "##
          "fix the environment, or skip verification for this PR?" \
          "Exclude the verification skill's own directory" "Never \`git add\` evidence" \
          "When only one of the two keys is \`true\`" \
-         "## Verification (verify-<app>)" "Not run — " "do not re-run pre-PR checks"; do
+         "## Verification (verify-<app>)" "Not run — " "do not re-run pre-PR checks" \
+         "re-run that feature once" "still fails after a harness fix"; do
     require_text "$F" "$t"
 done
+require_text "skills/finishing-a-development-branch/pr-watch.md" "verification was not re-run"
 F="skills/finishing-a-development-branch/SKILL.md"
 require_text "$F" "[pre-pr-checks.md](pre-pr-checks.md)"
 require_text "$F" "\`blastRadius\`"

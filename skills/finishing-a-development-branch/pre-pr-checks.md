@@ -51,8 +51,14 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
    - **Drift** — the harness is out of date (selector, launch command,
      map entry, a cleanup that eats evidence). Fix only the verification
      skill's own directory, commit it alone
-     (`fix: update verify-<app> skill`), re-run that feature, and classify
-     the result again. Never edit product code for drift.
+     (`fix: update verify-<app> skill`), and
+     re-run that feature once. Never edit product code for drift. If it
+     fails again, it is no longer drift: stop and ask —
+
+     > Verification of <feature> still fails after a harness fix — investigate as a product failure, or skip verification for this PR?
+
+     Product failure → Step C. Skip → the PR section reads
+     `Not run — <reason>; skipped by <human partner>.` for that feature.
    - **Product failure** — the app behaves wrong. Blocking. Go to Step C.
    - **Environment** — Launch or Doctor fails for a reason that is
      neither drift nor product: missing secrets, a dependency service
