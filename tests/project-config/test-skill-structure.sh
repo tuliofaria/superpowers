@@ -21,6 +21,25 @@ require_text() {
     fi
 }
 
+forbid_text() {
+    if [ -f "$REPO_ROOT/$1" ] && ! grep -qF -- "$2" "$REPO_ROOT/$1"; then
+        pass "$1 omits: $2"
+    else
+        fail "$1 has or is missing: $2"
+    fi
+}
+
+require_order() {
+    local a b
+    a=$(grep -nF -- "$2" "$REPO_ROOT/$1" 2>/dev/null | head -1 | cut -d: -f1 || true)
+    b=$(grep -nF -- "$3" "$REPO_ROOT/$1" 2>/dev/null | head -1 | cut -d: -f1 || true)
+    if [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ]; then
+        pass "$1 orders: $2 before $3"
+    else
+        fail "$1 order wrong or missing: $2 before $3"
+    fi
+}
+
 echo "Project config skill structure"
 
 # --- sp-init + project-config reference ---
@@ -137,6 +156,20 @@ require_text "$F" "-F body=@<file>"
 require_text "$F" "Ours are the replies you posted in"
 require_text "$F" "compare \`date -u\` with the target time"
 require_text "$F" "<what is left, and why>"
+
+# --- vendored pstack ---
+F="skills/blast-radius/SKILL.md"
+require_file "$F"
+require_text "$F" "name: blast-radius"
+require_text "$F" "### How sure are you"
+require_text "$F" "git log <base>..HEAD"
+require_text "$F" "When \`crossReview\` is on, a second model reviews after this step; do not run another."
+forbid_text "$F" "disable-model-invocation"
+for t in ".cursor/skills" "\`how\`" "\`why\`" "unslop" "arena"; do forbid_text "$F" "$t"; done
+require_file "docs/vendored/pstack/LICENSE"
+require_text "docs/vendored/pstack/LICENSE" "Lauren Tan"
+require_text "docs/vendored/pstack/README.md" "Pinned SHA: ae5650febf4320793844c12c4adaa937f417f8da"
+require_text "docs/vendored/pstack/README.md" "### blast-radius"
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
