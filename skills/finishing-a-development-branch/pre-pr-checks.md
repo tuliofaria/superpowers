@@ -8,15 +8,28 @@ broken, and record the outcome in the PR body. Called by
 
 Run Step A if `blastRadius` is `true`, then Step B if `verify` is `true`.
 When only one of the two keys is `true`, run only that step; feature
-selection then uses the diff alone. Any blocking finding goes to Step C.
-Finish with Step D.
+selection then uses the diff alone. Run every enabled step to completion
+before fixing anything: record blocking findings as you go. Then go to
+Step C if any finding is blocking, otherwise to Step D.
+
+A skip your human partner chose holds for the rest of this run: when a
+later pass re-runs Step B, do not ask about that feature or environment
+problem again, and do not retry a drift fix for it.
+
+**Commits.** This file makes three kinds of commit:
+`chore: add verify-<app> skill`, `fix: update verify-<app> skill`, and
+`fix: address pre-PR check findings`. Never `git add` evidence in any of
+them, even when it lives inside the skill directory. Stage by explicit
+path only the files the commit is about: the generated or fixed skill
+files, or the source and test files the fix touched.
 
 ## Step A: Blast radius
 
 Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
 
 - **Blocking:** a risk *confirmed* at step 4 or 5 of its "How sure are
-  you" ladder — a script, test, or repro shows the breakage. Go to Step C.
+  you" ladder — a script, test, or repro shows the breakage. Record it
+  and continue to Step B; Step C fixes it.
 - **Not blocking:** risks not proven, and an unproven safety fact. They
   go into the PR body as unproven. Never list them as cleared.
 - Note every feature the writeup names as possibly affected; Step B runs
@@ -57,9 +70,11 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
 
      > Verification of <feature> still fails after a harness fix — investigate as a product failure, or skip verification for this PR?
 
-     Product failure → Step C. Skip → the PR section reads
-     `Not run — <reason>; skipped by <human partner>.` for that feature.
-   - **Product failure** — the app behaves wrong. Blocking. Go to Step C.
+     Investigate → treat it as a product failure. Skip → the PR section
+     reads `Not run — <reason>; skipped by <human partner>.` for that
+     feature.
+   - **Product failure** — the app behaves wrong. Blocking. Record it and
+     go on to the next feature; Step C fixes it.
    - **Environment** — Launch or Doctor fails for a reason that is
      neither drift nor product: missing secrets, a dependency service
      that is down, a port in use. Stop and ask —
@@ -71,15 +86,16 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
 
 ## Step C: Fix loop
 
-- For each blocking finding from A or B: fix it (follow
+- **A round:** take the pass that just finished (every enabled step run
+  to completion), fix all blocking findings from that pass (follow
   `superpowers:test-driven-development` when there is a cheap local test
-  target), run the full test suite, and commit
-  `fix: address pre-PR check findings`. Then re-run every enabled step —
-  the diff changed.
-- Never `git add` evidence; stage only the source and test files the fix
-  touched.
-- At most 2 fix rounds. Still blocked after round 2: stop. Report the
-  finding, its proof, and what was tried to your human partner.
+  target), run the full test suite, and commit once:
+  `fix: address pre-PR check findings`. Then re-run every enabled step to
+  completion — the diff changed. That re-run is the next pass.
+- Next pass clean → Step D. Still blocking → another round.
+- At most 2 fix rounds. Still blocked on the pass after round 2: stop.
+  Report each finding, its proof, and what was tried to your human
+  partner.
   No PR is opened.
 - Suite red after a fix and you cannot make it pass: stop and report. No
   PR on a red suite.
