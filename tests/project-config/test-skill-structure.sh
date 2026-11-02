@@ -112,6 +112,9 @@ require_text "$F" "\`watchPr\`"
 require_text "$F" "[pr-watch.md](pr-watch.md)"
 require_text "$F" "Checks are still running — I'll report the URL and stop"
 require_text "README.md" "watchPr"
+require_text "README.md" "blastRadius"
+require_text "README.md" "verify-<app>"
+require_text "README.md" "docs/vendored/pstack/"
 
 # --- writing-plans honors execution ---
 F="skills/writing-plans/SKILL.md"

@@ -23,7 +23,7 @@ Superpowers is a complete software development methodology for your coding agent
   - [Qwen Code](#qwen-code)
   - [Hermes Agent](#hermes-agent)
   - [Muse](#muse)
-- [Fork: Project Config, `/sp`, and Cross-Provider Review](#fork-project-config-sp-and-cross-provider-review)
+- [Fork: Project Config, `/sp`, Cross-Provider Review, and Pre-PR Checks](#fork-project-config-sp-cross-provider-review-and-pre-pr-checks)
 - [The Basic Workflow](#the-basic-workflow)
 - [When Something Goes Wrong](#when-something-goes-wrong)
 - [Community](#community)
@@ -305,14 +305,14 @@ Superpowers is available as a native Muse plugin — same repo, same skills, all
 
 Restart any active Muse sessions after installing so the `SessionStart` hook takes effect — skills are active immediately, hooks require approval on first install. To verify, start a fresh session and send `Let's make a react todo list` — a working install auto-triggers `brainstorming` before any code is written. Version is tracked in `.version-bump.json` so `scripts/bump-version.sh` keeps it in sync.
 
-## Fork: Project Config, `/sp`, and Cross-Provider Review
+## Fork: Project Config, `/sp`, Cross-Provider Review, and Pre-PR Checks
 
 This fork adds per-project defaults. Run `/sp-init` to write them, or edit
 the JSON by hand — details in
 [`skills/sp-init/project-config.md`](skills/sp-init/project-config.md).
 
 ```json
-{ "mode": "manual", "finish": "pr", "crossReview": true, "watchPr": true, "execution": "native" }
+{ "mode": "manual", "finish": "pr", "crossReview": true, "watchPr": true, "blastRadius": true, "verify": true, "execution": "native" }
 ```
 
 - **`mode: "manual"`** (harnesses that run the SessionStart hook, not Codex) — superpowers stays quiet until
@@ -329,9 +329,19 @@ the JSON by hand — details in
   Reviewer, humans), waits out CodeRabbit's rate limit and re-triggers it,
   and writes a `## PR watch` report into the PR body. GitHub only; at most
   3 fix rounds.
+- **`blastRadius: true`** — before every PR, finds what the change could
+  break beyond the diff and proves the fact it's safe because of.
+- **`verify: true`** — before every PR, drives the real app through the
+  project's `verify-<app>` skill, offers to generate one with
+  `/superpowers:create-verification-skill`, and maintains it with
+  `/superpowers:maintain-verification-skill`.
 - **`execution: "subagent" | "native"`** — after you approve a plan, it
   runs with that method without asking (`subagent` → subagent-driven
   development, `native` → in-session execution). You still review the plan.
+
+blast-radius and the verification skills are adapted from
+[pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan
+(MIT) — see `docs/vendored/pstack/`.
 
 Files, highest precedence first: `.superpowers/config.local.json`
 (personal — add it to `.gitignore`), `.superpowers.json`
