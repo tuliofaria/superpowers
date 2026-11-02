@@ -150,9 +150,11 @@ option too, and whether you got here from the menu or from `finish: "pr"`.
 **If the project config sets `crossReview: true`:** then — after
 pre-pr-checks.md, when it ran — run
 [cross-provider-review.md](../requesting-code-review/cross-provider-review.md)
-with `<base-branch>`, and include its section in the PR body. This applies
-to the detached-HEAD PR option too, and whether you got here from the menu
-or from `finish: "pr"`.
+with `<base-branch>`, and include its section in the PR body. If it
+committed fixes after pre-pr-checks.md ran, mark that file's sections as
+not re-run (see its "Interaction with cross-review and pr-watch"). This
+applies to the detached-HEAD PR option too, and whether you got here from
+the menu or from `finish: "pr"`.
 
 ```bash
 git push -u origin <feature-branch>

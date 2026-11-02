@@ -51,8 +51,9 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
      alone: `chore: add verify-<app> skill`. If `git add` refuses because
      the repo ignores `.claude/`, report it and ask your human partner —
      `git add -f` the skill directory, or skip verification for this PR.
-     If it cannot produce a skill that runs, treat that as an Environment
-     failure (item 4). Skip → the PR section reads
+     If it cannot produce a skill that runs, classify why under item 4:
+     the app behaving wrong is a Product failure, not an Environment
+     one. Skip → the PR section reads
      `Not run — no verification skill; skipped by <human partner>.`
 2. **Select features.** The map lists user entry points, not file
    paths, so trace from source. List the changed files
@@ -118,23 +119,29 @@ Add the section for each enabled step:
 
 ```markdown
 ## Blast radius
+- **Checked at:** `<short sha>`
 - **Safe because:** <fact> — proven at ladder step <N> (<how>) | unproven
 - **Risks:** <how it breaks> — `file:line` — <likelihood/cost> — <check>
 - **Cleared:** <what was checked and why it is fine>
 - **Proof:** <script or command, and its output>
 
 ## Verification (verify-<app>)
+- **Checked at:** `<short sha>`
 - **<feature>:** pass | fail → fixed in <sha> — evidence: <local path>
 ```
 
+- `Checked at` is `git rev-parse --short HEAD` when the last pass
+  finished.
 - Evidence stays local; the PR lists the paths and does not upload
   artifacts.
 - A step that did not run reads `Not run — <reason>.`
 - Write "none" for an empty list.
 
-## Interaction with pr-watch
+## Interaction with cross-review and pr-watch
 
-- Fix commits pushed by the PR watch do not re-run pre-PR checks, as with
-  cross-review.
+- Cross-review runs after these checks, and its fix commits do not re-run
+  them. If it committed fixes, add to each section:
+  `Not re-run after cross-review fixes <shas>.`
+- Fix commits pushed by the PR watch do not re-run pre-PR checks either.
 - When a watch fix touches a user-facing feature, the thread reply or the
   final `## PR watch` section says verification was not re-run.

@@ -224,7 +224,7 @@ rm -f "$tmp_readme"
 F="skills/finishing-a-development-branch/pre-pr-checks.md"
 require_file "$F"
 for t in "## Step A: Blast radius" "## Step B: Verify" "## Step C: Fix loop" "## Step D: PR body" \
-         "## Interaction with pr-watch" "superpowers:blast-radius" "superpowers:create-verification-skill" \
+         "## Interaction with cross-review and pr-watch" "superpowers:blast-radius" "superpowers:create-verification-skill" \
          ".claude/skills/" ".agents/skills/" ".cursor/skills/" \
          "Generate one now (create-verification-skill, once per repo) or skip verification for this PR?" \
          "chore: add verify-<app> skill" "fix: update verify-<app> skill" "fix: address pre-PR check findings" \
@@ -236,13 +236,16 @@ for t in "## Step A: Blast radius" "## Step B: Verify" "## Step C: Fix loop" "##
          "re-run that feature once" "still fails after a harness fix" \
          "fix all blocking findings from that pass" "Run every enabled step to completion" \
          "Never \`git add\` evidence in any of" "A skip your human partner chose holds for the rest of this run" \
-         "When unsure, include the feature"; do
+         "When unsure, include the feature" "**Checked at:** \`<short sha>\`" \
+         "Not re-run after cross-review fixes <shas>." "is a Product failure, not an Environment"; do
     require_text "$F" "$t"
 done
+forbid_text "$F" "treat that as an Environment"
 require_text "skills/finishing-a-development-branch/pr-watch.md" "verification was not re-run"
 F="skills/finishing-a-development-branch/SKILL.md"
 require_text "$F" "[pre-pr-checks.md](pre-pr-checks.md)"
 require_text "$F" "\`blastRadius\`"
+require_text "$F" "mark that file's sections as"
 require_order "$F" "[pre-pr-checks.md](pre-pr-checks.md)" "../requesting-code-review/cross-provider-review.md"
 require_text "$F" "The tests pass, so verification is redundant"
 require_text "$F" "This risk is probably fine"
