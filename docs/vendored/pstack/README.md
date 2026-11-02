@@ -20,3 +20,18 @@ Run `scripts/pstack-upstream-diff.sh` to see what changed upstream since the pin
 - Step 4: removed the "Same rules as `why`." sentence.
 - Step 6: the `arena` instruction became "When `crossReview` is on, a second model reviews after this step; do not run another."
 - Closing paragraph: dropped the `unslop` reference.
+
+### create-verification-skill
+
+- Frontmatter: removed `disable-model-invocation` so the skill can be invoked by the model.
+- Replaced the "In Claude Code, read the Claude Code adapter" paragraph with a note to ask questions with `AskUserQuestion` and to use an `Explore` subagent (brief: "do not edit files") for read-only help.
+- Generated skills live at `.claude/skills/verify-<app>/` instead of `.cursor/skills/verify-<app>/` (all three mentions).
+- Step 5: `/maintain-verification-skill` became `/superpowers:maintain-verification-skill`.
+- `references/feature-map-example/` is copied unchanged.
+
+### maintain-verification-skill
+
+- Kept `disable-model-invocation: true`; the skill stays manual-only.
+- Deleted the "In Claude Code, read the Claude Code adapter" paragraph.
+- Step 0: `.cursor/skills/verify-*/` became `.claude/skills/verify-*/`.
+- Step 2: "One read-only subagent per feature file" became "One `Explore` subagent per feature file, briefed "do not edit files"; check `git status` afterward".

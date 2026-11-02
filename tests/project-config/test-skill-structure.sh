@@ -170,6 +170,26 @@ require_file "docs/vendored/pstack/LICENSE"
 require_text "docs/vendored/pstack/LICENSE" "Lauren Tan"
 require_text "docs/vendored/pstack/README.md" "Pinned SHA: ae5650febf4320793844c12c4adaa937f417f8da"
 require_text "docs/vendored/pstack/README.md" "### blast-radius"
+F="skills/create-verification-skill/SKILL.md"
+require_file "$F"
+require_text "$F" "name: create-verification-skill"
+require_text "$F" ".claude/skills/verify-<app>/"
+require_text "$F" "AskUserQuestion"
+require_text "$F" "/superpowers:maintain-verification-skill"
+forbid_text "$F" "disable-model-invocation"
+for r in README.md create-note.md search.md; do
+    require_file "skills/create-verification-skill/references/feature-map-example/$r"
+done
+F="skills/maintain-verification-skill/SKILL.md"
+require_file "$F"
+require_text "$F" "disable-model-invocation: true"
+require_text "$F" ".claude/skills/verify-*/"
+require_text "$F" "\`Explore\` subagent"
+for F in skills/create-verification-skill/SKILL.md skills/maintain-verification-skill/SKILL.md; do
+    for t in ".cursor/skills" "Claude Code adapter" "docs/harness"; do forbid_text "$F" "$t"; done
+done
+require_text "docs/vendored/pstack/README.md" "### create-verification-skill"
+require_text "docs/vendored/pstack/README.md" "### maintain-verification-skill"
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
