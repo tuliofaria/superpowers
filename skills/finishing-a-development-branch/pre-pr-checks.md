@@ -44,17 +44,29 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
 
      > This repo has no verification skill. Generate one now (create-verification-skill, once per repo) or skip verification for this PR?
 
-     Generate → follow `superpowers:create-verification-skill`, then
-     commit its output alone: `chore: add verify-<app> skill`. If it
-     cannot produce a skill that runs, treat that as an Environment
+     Generate → follow `superpowers:create-verification-skill`. During
+     this run it edits only `.claude/skills/verify-<app>/`; anything else
+     that fails is classified under item 4 (Environment or Product
+     failure), never fixed by the generator. Then commit its output
+     alone: `chore: add verify-<app> skill`. If `git add` refuses because
+     the repo ignores `.claude/`, report it and ask your human partner —
+     `git add -f` the skill directory, or skip verification for this PR.
+     If it cannot produce a skill that runs, treat that as an Environment
      failure (item 4). Skip → the PR section reads
      `Not run — no verification skill; skipped by <human partner>.`
-2. **Select features.** From the skill's `features/` map, take every
-   feature whose source paths or entry points the diff
-   (`git diff --name-only <base-branch>...HEAD`) touches, plus those
-   Step A named. Exclude the verification skill's own directory from
-   feature selection. Nothing selected (docs- or test-only diff): skip
-   the run, and the PR section reads `Not run — <reason>.`
+2. **Select features.** The map lists user entry points, not file
+   paths, so trace from source. List the changed files
+   (`git diff --name-only <base-branch>...HEAD`).
+   Exclude the verification skill's own directory from feature
+   selection, and skip docs and tests. For each remaining file, read
+   the source to find which features' user entry points (each feature
+   file's "How to get to it" section) reach it; an `Explore` subagent
+   (brief: "do not edit files") is fine for this. Take every feature
+   reached, plus those Step A named. When unsure, include the feature.
+   Changed user-facing code that no feature reaches is a map gap: say so
+   in the `## Verification` section. Skip the run as "nothing selected" only
+   when every changed file is docs, tests, or the verification skill's
+   own directory; the PR section then reads `Not run — <reason>.`
 3. **Run.** Follow the project skill: Launch, Doctor, Drive each selected
    feature, Evidence, Cleanup. Drive each journey as its feature file
    writes it; never weaken one to make it pass. After Cleanup, confirm the
@@ -75,9 +87,9 @@ Follow `superpowers:blast-radius` on `<base-branch>..HEAD`.
      feature.
    - **Product failure** — the app behaves wrong. Blocking. Record it and
      go on to the next feature; Step C fixes it.
-   - **Environment** — Launch or Doctor fails for a reason that is
-     neither drift nor product: missing secrets, a dependency service
-     that is down, a port in use. Stop and ask —
+   - **Environment** — Launch, Doctor, or a drive fails for an
+     environment reason, neither drift nor product: missing secrets, a
+     dependency service that is down, a port in use. Stop and ask —
 
      > Verification can't start (<reason>) — fix the environment, or skip verification for this PR?
 
@@ -106,7 +118,7 @@ Add the section for each enabled step:
 
 ```markdown
 ## Blast radius
-- **Safe because:** <fact> — proven at step <N> (<how>) | unproven
+- **Safe because:** <fact> — proven at ladder step <N> (<how>) | unproven
 - **Risks:** <how it breaks> — `file:line` — <likelihood/cost> — <check>
 - **Cleared:** <what was checked and why it is fine>
 - **Proof:** <script or command, and its output>
