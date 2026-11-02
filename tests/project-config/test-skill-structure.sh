@@ -190,6 +190,24 @@ for F in skills/create-verification-skill/SKILL.md skills/maintain-verification-
 done
 require_text "docs/vendored/pstack/README.md" "### create-verification-skill"
 require_text "docs/vendored/pstack/README.md" "### maintain-verification-skill"
+F="scripts/pstack-upstream-diff.sh"
+require_file "$F"
+if [[ -x "$REPO_ROOT/$F" ]]; then
+    pass "$F is executable"
+else
+    fail "$F is not executable"
+fi
+require_text "$F" "mktemp -d"
+require_text "$F" "Pinned SHA:"
+require_text "$F" "trap"
+tmp_readme=$(mktemp)
+echo "no sha here" > "$tmp_readme"
+if PSTACK_README="$tmp_readme" "$REPO_ROOT/scripts/pstack-upstream-diff.sh" >/dev/null 2>&1; then
+    fail "pstack-upstream-diff.sh exits non-zero without a pinned SHA"
+else
+    pass "pstack-upstream-diff.sh exits non-zero without a pinned SHA"
+fi
+rm -f "$tmp_readme"
 
 if [[ "$FAILURES" -gt 0 ]]; then
     echo "STATUS: FAILED ($FAILURES failure(s))"
