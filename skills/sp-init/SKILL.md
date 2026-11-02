@@ -19,9 +19,11 @@ config") and show each key with its value and the file it came from
 1. `mode` — "auto" (superpowers triggers on its own) or "manual" (only via `/sp`; applies in harnesses that run the SessionStart hook, not Codex)?
 2. `finish` — "ask" (menu at the end) or "pr" (always open a PR)?
 3. `crossReview` — review with the other provider (Claude Code → Codex, Codex → Claude) before every PR?
-4. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
-5. `watchPr` — after opening a PR, keep watching it (CI, CodeRabbit, review threads) until it is ready to merge?
-6. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`, written to `<main>/.superpowers/config.local.json` in a linked worktree), or global (`~/.config/superpowers/config.json`)?
+4. `blastRadius` — run blast-radius before every PR?
+5. `verify` — verify the real app (the project's `verify-<app>` skill) before every PR?
+6. `execution` — how to run approved plans: "ask" each time, "subagent" (subagent-driven, a reviewer per task), or "native" (in-session, one review at the end)?
+7. `watchPr` — after opening a PR, keep watching it (CI, CodeRabbit, review threads) until it is ready to merge?
+8. Destination — project committed (`.superpowers.json`), project local (`.superpowers/config.local.json`, written to `<main>/.superpowers/config.local.json` in a linked worktree), or global (`~/.config/superpowers/config.json`)?
 
 Offer the current effective value as the default answer for each.
 

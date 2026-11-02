@@ -234,7 +234,11 @@ Checks: green · CodeRabbit: no actionable comments (<sha>) · Rounds: 1/3
 - **Open:** <what is left, and why>
 ```
 
-Write "none" for an empty list. Then write it into the PR body once. Read
+Write "none" for an empty list. If `verify` is on and a fix commit touched
+a user-facing feature, say in this section that
+verification was not re-run for it.
+
+Then write it into the PR body once. Read
 the current body (`gh pr view <n> --json body -q .body`). With your
 harness's file-write tool, write the new body to a temp file: replace an
 existing `## PR watch` section or append one, and
