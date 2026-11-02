@@ -8,6 +8,8 @@ files, all with the same flat shape:
   "mode": "auto",
   "finish": "ask",
   "crossReview": false,
+  "blastRadius": false,
+  "verify": false,
   "execution": "ask",
   "watchPr": false
 }
@@ -18,6 +20,8 @@ files, all with the same flat shape:
 | `mode` | `"auto"` \| `"manual"` | `"auto"` | `manual`: superpowers stays quiet until your human partner runs `/sp`. Applies in harnesses that run the SessionStart hook (not Codex) — the hook reads it. |
 | `finish` | `"ask"` \| `"pr"` | `"ask"` | `pr`: `finishing-a-development-branch` skips its menu and opens a PR. |
 | `crossReview` | `true` \| `false` | `false` | `true`: before any PR push, run the cross-provider review loop. |
+| `blastRadius` | `true` \| `false` | `false` | `true`: before any PR push, finishing runs `superpowers:blast-radius` on `<base>..HEAD` — see [pre-pr-checks.md](../finishing-a-development-branch/pre-pr-checks.md). |
+| `verify` | `true` \| `false` | `false` | `true`: before any PR push, finishing runs the project's `verify-<app>` skill on the features the diff touches; asks whether to generate one when none exists — see [pre-pr-checks.md](../finishing-a-development-branch/pre-pr-checks.md). |
 | `execution` | `"ask"` \| `"subagent"` \| `"native"` | `"ask"` | How an approved plan is executed: `subagent` → `superpowers:subagent-driven-development`, `native` → `superpowers:executing-plans`, `ask` → ask each time. `subagent` without a subagent tool runs as `native`, said out loud. Never skips plan review. A method your human partner states explicitly in the conversation wins over this setting. |
 | `watchPr` | `true` \| `false` | `false` | `true`: after finishing opens a PR, it watches the PR until checks and reviews settle — see [pr-watch.md](../finishing-a-development-branch/pr-watch.md). GitHub only. |
 

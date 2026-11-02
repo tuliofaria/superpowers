@@ -63,6 +63,14 @@ require_text "skills/sp-init/SKILL.md" ".gitignore"
 require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers/config.local.json"
 require_text "skills/sp-init/SKILL.md" "git check-ignore -q .superpowers.json"
 require_text "skills/sp-init/SKILL.md" "Never commit"
+require_text "skills/sp-init/project-config.md" '"blastRadius": false'
+require_text "skills/sp-init/project-config.md" '"verify": false'
+require_text "skills/sp-init/project-config.md" '| `blastRadius` |'
+require_text "skills/sp-init/project-config.md" '| `verify` |'
+require_text "skills/sp-init/SKILL.md" '`blastRadius` — run blast-radius before every PR?'
+require_text "skills/sp-init/SKILL.md" "\`verify\` — verify the real app (the project's \`verify-<app>\` skill) before every PR?"
+require_order "skills/sp-init/SKILL.md" '`crossReview` —' '`blastRadius` —'
+require_order "skills/sp-init/SKILL.md" '`verify` —' '`execution` —'
 
 # --- sp router ---
 require_file "skills/sp/SKILL.md"
